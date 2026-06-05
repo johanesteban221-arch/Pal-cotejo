@@ -214,7 +214,7 @@ async function main() {
     },
   });
 
-  console.log(`✔ Seed demo completado: 2 canchas, ${clientes.length} clientes, ${totalReservas} reservas con pagos, mesas y reportes listos.`);
+  console.log(`✔ Seed demo completado: ${canchas.length} cancha(s), ${clientes.length} clientes, ${totalReservas} reservas con pagos, mesas y reportes listos.`);
 }
 
 main()
