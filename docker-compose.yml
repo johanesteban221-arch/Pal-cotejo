@@ -1,0 +1,21 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: sportbar_postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-sportbar}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-sportbar_dev}
+      POSTGRES_DB: ${POSTGRES_DB:-sportbar}
+    ports:
+      - "${POSTGRES_PORT:-5432}:5432"
+    volumes:
+      - sportbar_pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-sportbar}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  sportbar_pgdata:

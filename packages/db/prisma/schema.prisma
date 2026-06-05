@@ -1,0 +1,274 @@
+// ───────────────────────────────────────────────────────────────────
+// Plataforma de reservas — Sport Bar & Cancha Sintetica (Colombia)
+// Modelo de datos transaccional. Moneda: COP (montos en enteros, sin decimales).
+// ───────────────────────────────────────────────────────────────────
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ── Enums ──────────────────────────────────────────────────────────
+
+enum TipoTarifa {
+  PICO // hora pico — precio alto
+  VALLE // hora valle — precio bajo
+}
+
+enum EstadoReserva {
+  PENDIENTE // creada, esperando pago
+  CONFIRMADA // pago/abono aprobado
+  CANCELADA // cancelada por cliente o staff
+  COMPLETADA // ya se jugo
+  NO_SHOW // cliente no se presento
+}
+
+enum OrigenReserva {
+  WEB // reserva en linea por el cliente
+  MANUAL // ingresada por caja (llamada/presencial)
+}
+
+enum FrecuenciaRecurrencia {
+  SEMANAL
+  MENSUAL
+}
+
+enum MotivoBloqueo {
+  MANTENIMIENTO
+  TORNEO
+  EVENTO_PRIVADO
+  OTRO
+}
+
+enum EstadoPago {
+  PENDIENTE
+  APROBADO
+  RECHAZADO
+  REEMBOLSADO
+}
+
+enum TipoPago {
+  ABONO // anticipo (% del total)
+  TOTAL // pago 100% en linea
+  SALDO_CAJA // saldo liquidado presencialmente en el bar
+}
+
+enum MetodoPago {
+  WOMPI_TARJETA
+  WOMPI_PSE
+  WOMPI_NEQUI
+  EFECTIVO
+  OTRO
+}
+
+enum EstadoReservaMesa {
+  SOLICITADA
+  CONFIRMADA
+  CANCELADA
+}
+
+enum RolStaff {
+  ADMIN
+  CAJA
+}
+
+// ── Entidades principales ──────────────────────────────────────────
+
+model Cancha {
+  id          String   @id @default(cuid())
+  nombre      String
+  tipo        String?  // ej. "Futbol 5", "Futbol 8"
+  descripcion String?
+  activa      Boolean  @default(true)
+  creadoEn    DateTime @default(now())
+  actualizadoEn DateTime @updatedAt
+
+  tarifas     Tarifa[]
+  reservas    Reserva[]
+  recurrentes ReservaRecurrente[]
+  bloqueos    Bloqueo[]
+
+  @@map("canchas")
+}
+
+/// Precio variable por dia de la semana y franja horaria.
+/// diaSemana: 0=Domingo ... 6=Sabado. null = aplica a todos los dias.
+model Tarifa {
+  id         String     @id @default(cuid())
+  canchaId   String
+  diaSemana  Int? // 0-6, null = todos los dias
+  horaInicio String // "HH:mm" 24h
+  horaFin    String // "HH:mm" 24h
+  precio     Int // COP, entero
+  tipo       TipoTarifa @default(VALLE)
+  activa     Boolean    @default(true)
+  creadoEn   DateTime   @default(now())
+
+  cancha Cancha @relation(fields: [canchaId], references: [id], onDelete: Cascade)
+
+  @@index([canchaId, diaSemana])
+  @@map("tarifas")
+}
+
+model Cliente {
+  id        String   @id @default(cuid())
+  nombre    String
+  telefono  String   @unique // requerido para WhatsApp
+  email     String?
+  notas     String?
+  creadoEn  DateTime @default(now())
+
+  reservas     Reserva[]
+  recurrentes  ReservaRecurrente[]
+  reservasMesa ReservaMesa[]
+
+  @@map("clientes")
+}
+
+model Reserva {
+  id          String        @id @default(cuid())
+  canchaId    String
+  clienteId   String
+  fecha       DateTime      @db.Date // dia de la reserva
+  horaInicio  String // "HH:mm"
+  horaFin     String // "HH:mm"
+  estado      EstadoReserva @default(PENDIENTE)
+  origen      OrigenReserva @default(WEB)
+
+  montoTotal   Int // COP
+  montoAbonado Int @default(0) // pagado en linea
+  saldo        Int @default(0) // pendiente en caja
+
+  // Recurrencia origen (si fue generada por una regla)
+  recurrenteId String?
+
+  // Politica de cancelacion
+  canceladaEn     DateTime?
+  motivoCancelacion String?
+
+  creadoEn      DateTime @default(now())
+  actualizadoEn DateTime @updatedAt
+
+  cancha      Cancha             @relation(fields: [canchaId], references: [id])
+  cliente     Cliente            @relation(fields: [clienteId], references: [id])
+  recurrente  ReservaRecurrente? @relation(fields: [recurrenteId], references: [id])
+  pagos       Pago[]
+  reservaMesa ReservaMesa?
+
+  @@index([canchaId, fecha])
+  @@index([estado])
+  @@index([fecha])
+  @@map("reservas")
+}
+
+/// Regla de reserva fija (cliente recurrente). Genera reservas concretas.
+model ReservaRecurrente {
+  id          String                @id @default(cuid())
+  canchaId    String
+  clienteId   String
+  frecuencia  FrecuenciaRecurrencia
+  diaSemana   Int // 0-6
+  horaInicio  String
+  horaFin     String
+  fechaInicio DateTime              @db.Date
+  fechaFin    DateTime?             @db.Date // null = indefinida
+  activa      Boolean               @default(true)
+  creadoEn    DateTime              @default(now())
+
+  cancha   Cancha    @relation(fields: [canchaId], references: [id])
+  cliente  Cliente   @relation(fields: [clienteId], references: [id])
+  reservas Reserva[]
+
+  @@index([canchaId, diaSemana])
+  @@map("reservas_recurrentes")
+}
+
+/// Bloqueo de cancha por mantenimiento, torneo o evento privado.
+model Bloqueo {
+  id       String        @id @default(cuid())
+  canchaId String
+  inicio   DateTime // fecha-hora inicio
+  fin      DateTime // fecha-hora fin
+  motivo   MotivoBloqueo @default(OTRO)
+  nota     String?
+  creadoEn DateTime      @default(now())
+
+  cancha Cancha @relation(fields: [canchaId], references: [id], onDelete: Cascade)
+
+  @@index([canchaId, inicio])
+  @@map("bloqueos")
+}
+
+model Pago {
+  id               String     @id @default(cuid())
+  reservaId        String
+  monto            Int // COP
+  tipo             TipoPago
+  metodo           MetodoPago
+  estado           EstadoPago @default(PENDIENTE)
+  // Referencia de la pasarela (transaction id de Wompi)
+  referenciaPasarela String?  @unique
+  // Payload crudo del evento de la pasarela (auditoria)
+  payloadPasarela  Json?
+  creadoEn         DateTime   @default(now())
+  actualizadoEn    DateTime   @updatedAt
+
+  reserva Reserva @relation(fields: [reservaId], references: [id], onDelete: Cascade)
+
+  @@index([reservaId])
+  @@index([estado])
+  @@map("pagos")
+}
+
+// ── Modulo Sport Bar (venta cruzada) ───────────────────────────────
+
+model Mesa {
+  id        String   @id @default(cuid())
+  nombre    String
+  capacidad Int      @default(4)
+  activa    Boolean  @default(true)
+  creadoEn  DateTime @default(now())
+
+  reservasMesa ReservaMesa[]
+
+  @@map("mesas")
+}
+
+/// Reserva opcional de mesa asociada (o no) a una reserva de cancha.
+model ReservaMesa {
+  id        String            @id @default(cuid())
+  mesaId    String?
+  reservaId String?           @unique // venta cruzada con la reserva de cancha
+  clienteId String
+  fecha     DateTime          @db.Date
+  hora      String // "HH:mm"
+  personas  Int               @default(2)
+  estado    EstadoReservaMesa @default(SOLICITADA)
+  nota      String?
+  creadoEn  DateTime          @default(now())
+
+  mesa    Mesa?    @relation(fields: [mesaId], references: [id])
+  reserva Reserva? @relation(fields: [reservaId], references: [id])
+  cliente Cliente  @relation(fields: [clienteId], references: [id])
+
+  @@index([fecha])
+  @@map("reservas_mesa")
+}
+
+// ── Staff / autenticacion panel admin ──────────────────────────────
+
+model UsuarioStaff {
+  id           String   @id @default(cuid())
+  nombre       String
+  email        String   @unique
+  passwordHash String
+  rol          RolStaff @default(CAJA)
+  activo       Boolean  @default(true)
+  creadoEn     DateTime @default(now())
+
+  @@map("usuarios_staff")
+}

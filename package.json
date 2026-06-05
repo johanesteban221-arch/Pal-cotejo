@@ -1,0 +1,24 @@
+{
+  "name": "sportbar-reservas",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Plataforma de reservas para sport bar y cancha sintetica (Colombia)",
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "scripts": {
+    "db:up": "docker compose up -d postgres",
+    "db:down": "docker compose down",
+    "db:migrate": "npm run prisma:migrate --workspace @sportbar/db",
+    "db:studio": "npm run prisma:studio --workspace @sportbar/db",
+    "dev:api": "npm run start:dev --workspace @sportbar/api",
+    "dev:web": "npm run dev --workspace @sportbar/web"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "devDependencies": {
+    "playwright": "^1.60.0"
+  }
+}

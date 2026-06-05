@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<title>PAL COTEJO — Vista previa del producto</title>
+<style>
+  :root { --green:#22c55e; --dark:#0b1220; --muted:#64748b; --border:#e2e8f0; }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: "Segoe UI", Roboto, system-ui, sans-serif; color:#0f172a; }
+
+  .cover {
+    background: linear-gradient(135deg, #04210f, #0b1220 55%, #052e16);
+    color:#fff; padding: 70px 50px; page-break-after: always; min-height: 100vh;
+    display:flex; flex-direction:column; justify-content:center;
+  }
+  .cover .logo { width:70px;height:70px;border-radius:18px;background:linear-gradient(135deg,#22c55e,#16a34a);
+    display:grid;place-items:center;font-size:38px;margin-bottom:24px;box-shadow:0 10px 40px rgba(34,197,94,.4); }
+  .cover .kick { color:#4ade80; letter-spacing:4px; text-transform:uppercase; font-size:13px; font-weight:700; }
+  .cover h1 { font-size:46px; margin:10px 0; line-height:1.1; }
+  .cover h2 { font-size:20px; font-weight:400; color:#94a3b8; margin-bottom:40px; }
+  .cover .by { color:#64748b; font-size:14px; }
+  .cover .by b { color:#22c55e; }
+
+  .page { padding: 40px 44px; page-break-after: always; }
+  .sec-kick { color: var(--green); letter-spacing:3px; text-transform:uppercase; font-size:12px; font-weight:800; }
+  h3.sec { font-size:26px; margin:6px 0 4px; }
+  .sec-sub { color: var(--muted); font-size:14px; margin-bottom:24px; }
+
+  .phones { display:flex; flex-wrap:wrap; gap:22px; justify-content:center; }
+  .phone { width: 220px; }
+  .phone .frame { border:8px solid #0b1220; border-radius:26px; overflow:hidden; box-shadow:0 12px 30px rgba(0,0,0,.18); background:#0b1220; }
+  .phone img { width:100%; display:block; }
+  .phone .cap { text-align:center; margin-top:10px; }
+  .phone .cap .n { display:inline-block; width:22px;height:22px;border-radius:50%;background:var(--green);color:#04210f;
+    font-weight:800;font-size:12px;line-height:22px; margin-bottom:4px;}
+  .phone .cap .t { font-weight:700; font-size:13px; }
+  .phone .cap .d { color:var(--muted); font-size:11.5px; }
+
+  .admin-img { width:100%; border:1px solid var(--border); border-radius:14px; box-shadow:0 12px 30px rgba(0,0,0,.12); }
+  .feat { display:flex; gap:14px; margin-top:22px; }
+  .feat .f { flex:1; background:#f8fafc; border:1px solid var(--border); border-radius:12px; padding:14px; }
+  .feat .f .ic { font-size:22px; }
+  .feat .f .ft { font-weight:700; font-size:14px; margin:6px 0 3px; }
+  .feat .f .fd { color:var(--muted); font-size:12px; line-height:1.45; }
+  @page { size: A4; margin: 0; }
+</style>
+</head>
+<body>
+
+<div class="cover">
+  <div class="logo">⚽</div>
+  <div class="kick">Vista previa del producto</div>
+  <h1>PAL COTEJO<br>Sport Bar &amp; Cancha</h1>
+  <h2>Plataforma de reservas en línea · Mobile-first</h2>
+  <div class="by">Desarrollado por <b>Solucionez</b> · infra@solucionez.com</div>
+</div>
+
+<!-- Flujo cliente -->
+<div class="page">
+  <div class="sec-kick">Lo que vive el cliente</div>
+  <h3 class="sec">Reservar y pagar en 4 pasos, desde el celular</h3>
+  <div class="sec-sub">Sin descargar nada. El cliente entra desde un link o QR, reserva en segundos y paga en línea.</div>
+
+  <div class="phones">
+    <div class="phone">
+      <div class="frame"><img src="flujo-1-cancha.png"></div>
+      <div class="cap"><div class="n">1</div><div class="t">Elige la cancha</div><div class="d">Disponible 24/7</div></div>
+    </div>
+    <div class="phone">
+      <div class="frame"><img src="flujo-2-fecha.png"></div>
+      <div class="cap"><div class="n">2</div><div class="t">Elige el día</div><div class="d">Calendario dinámico</div></div>
+    </div>
+    <div class="phone">
+      <div class="frame"><img src="flujo-3-horario.png"></div>
+      <div class="cap"><div class="n">3</div><div class="t">Elige el horario</div><div class="d">Precios pico / valle</div></div>
+    </div>
+  </div>
+</div>
+
+<!-- Pago + confirmación -->
+<div class="page">
+  <div class="sec-kick">Pago, venta cruzada y confirmación</div>
+  <h3 class="sec">Abono o pago total, mesa del bar y aviso por WhatsApp</h3>
+  <div class="sec-sub">Cobra anticipo para asegurar la reserva, ofrece mesa en el sport bar y confirma automáticamente.</div>
+
+  <div class="phones">
+    <div class="phone">
+      <div class="frame"><img src="flujo-4b-datos.png"></div>
+      <div class="cap"><div class="n">4</div><div class="t">Sport Bar + pago</div><div class="d">Abono 50% o total · Wompi</div></div>
+    </div>
+    <div class="phone">
+      <div class="frame"><img src="flujo-5-confirmacion.png"></div>
+      <div class="cap"><div class="n">5</div><div class="t">Confirmación + WhatsApp</div><div class="d">Automático e inmediato</div></div>
+    </div>
+  </div>
+</div>
+
+<!-- Panel admin -->
+<div class="page" style="page-break-after:auto;">
+  <div class="sec-kick">Para el dueño y la caja</div>
+  <h3 class="sec">Panel de administración con reportes en vivo</h3>
+  <div class="sec-sub">Decisiones con datos reales: ingresos, horas más rentables, ocupación y base de clientes.</div>
+
+  <img class="admin-img" src="admin-dashboard.png">
+
+  <div class="feat">
+    <div class="f"><div class="ic">💰</div><div class="ft">Ingresos y ticket</div><div class="fd">Ventas diarias, semanales y mensuales con ticket promedio.</div></div>
+    <div class="f"><div class="ic">🔥</div><div class="ft">Horas rentables</div><div class="fd">Identifica las horas pico para reforzar personal y bar.</div></div>
+    <div class="f"><div class="ic">📊</div><div class="ft">Ocupación</div><div class="fd">Rendimiento por cancha y top de clientes frecuentes.</div></div>
+  </div>
+</div>
+
+</body>
+</html>

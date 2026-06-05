@@ -1,0 +1,58 @@
+# Blueprint de despliegue para Render.com — PAL COTEJO
+# Define TODO el stack (base de datos + API + Web) en un solo archivo.
+# En Render: New > Blueprint > conecta este repo y desplega.
+# Doc: https://render.com/docs/blueprint-spec
+
+databases:
+  - name: pal-cotejo-db
+    databaseName: sportbar
+    user: sportbar
+    plan: free
+
+services:
+  # ── API (NestJS) ────────────────────────────────────────────────
+  - type: web
+    name: pal-cotejo-api
+    runtime: node
+    plan: free
+    region: oregon
+    buildCommand: >
+      npm install &&
+      npm run prisma:generate --workspace @sportbar/db &&
+      npm run build --workspace @sportbar/api
+    # En cada deploy: aplica migraciones, carga datos demo y arranca la API
+    startCommand: >
+      npm run prisma:deploy --workspace @sportbar/db &&
+      npm run prisma:seed --workspace @sportbar/db &&
+      node apps/api/dist/main.js
+    healthCheckPath: /api/canchas
+    envVars:
+      - key: DATABASE_URL
+        fromDatabase:
+          name: pal-cotejo-db
+          property: connectionString
+      - key: DEFAULT_DEPOSIT_PERCENT
+        value: "50"
+      - key: WOMPI_BASE_URL
+        value: https://sandbox.wompi.co/v1
+      - key: WOMPI_PUBLIC_KEY
+        sync: false
+      - key: WOMPI_PRIVATE_KEY
+        sync: false
+      - key: WOMPI_EVENTS_SECRET
+        sync: false
+      - key: N8N_WEBHOOK_RESERVA_CONFIRMADA
+        sync: false
+
+  # ── Web (Next.js) ───────────────────────────────────────────────
+  - type: web
+    name: pal-cotejo-web
+    runtime: node
+    plan: free
+    region: oregon
+    buildCommand: npm install && npm run build --workspace @sportbar/web
+    startCommand: npm run start --workspace @sportbar/web
+    envVars:
+      # URL pública de la API. Ajusta si Render le pone otro sufijo al nombre.
+      - key: NEXT_PUBLIC_API_URL
+        value: https://pal-cotejo-api.onrender.com

@@ -1,0 +1,35 @@
+# Dependencies
+node_modules/
+.pnp
+.pnp.js
+
+# Builds
+dist/
+build/
+.next/
+out/
+
+# Env / secrets — NUNCA commitear
+.env
+.env.local
+.env.*.local
+*.key
+*.pem
+
+# Prisma
+packages/db/prisma/*.db
+
+# Logs
+logs/
+*.log
+npm-debug.log*
+
+# Editor / OS
+.DS_Store
+Thumbs.db
+.vscode/*
+!.vscode/extensions.json
+.idea/
+
+# Docker volumes locales
+.docker-data/
