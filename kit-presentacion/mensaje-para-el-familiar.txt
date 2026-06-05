@@ -1,0 +1,19 @@
+Hola [nombre] 👋
+
+Te paso todo para la presentación de la plataforma de reservas de PAL COTEJO (la cancha + sport bar).
+
+🔗 DEMO EN VIVO (ábrela 2 minutos antes de presentar, la primera carga es lenta):
+   • Página del cliente: https://pal-cotejo-web.onrender.com
+   • Panel del dueño:     https://pal-cotejo-web.onrender.com/admin
+
+📎 Te adjunto:
+   1. Guion de la presentación (qué mostrar y qué decir, paso a paso)
+   2. Vista previa del producto en PDF (por si falla el internet)
+   3. Propuesta comercial con los 3 planes y precios
+
+👉 Lo más importante que debe ver el cliente:
+   - Hacer una reserva en vivo desde el celular (cancha → hora → mesa del bar → pago)
+   - La confirmación que le llega por WhatsApp
+   - El panel de administración con las ventas y las horas más rentables
+
+Cualquier duda me escribes. ¡Gracias! 🙌

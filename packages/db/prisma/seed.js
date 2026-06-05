@@ -42,12 +42,9 @@ async function main() {
 
   // ── Canchas ──
   const cancha1 = await prisma.cancha.create({
-    data: { nombre: "Cancha 1 - Principal", tipo: "Futbol 5", activa: true },
+    data: { nombre: "Cancha Principal", tipo: "Futbol 5", activa: true },
   });
-  const cancha2 = await prisma.cancha.create({
-    data: { nombre: "Cancha 2 - Lateral", tipo: "Futbol 5", activa: true },
-  });
-  const canchas = [cancha1, cancha2];
+  const canchas = [cancha1];
 
   // ── Tarifas: valle diurno, pico nocturno, pico fin de semana ──
   for (const cancha of canchas) {
@@ -183,7 +180,7 @@ async function main() {
   finde.setDate(hoy.getDate() + 2);
   await prisma.bloqueo.create({
     data: {
-      canchaId: cancha2.id,
+      canchaId: cancha1.id,
       inicio: new Date(finde.toISOString().slice(0, 10) + "T14:00:00"),
       fin: new Date(finde.toISOString().slice(0, 10) + "T16:00:00"),
       motivo: "MANTENIMIENTO",

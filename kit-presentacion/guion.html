@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<title>Guion del presentador — PAL COTEJO</title>
+<style>
+  :root { --green:#16a34a; --dark:#04210f; --muted:#64748b; --border:#e2e8f0; --bg:#f8fafc; }
+  * { box-sizing:border-box; margin:0; padding:0; }
+  body { font-family:"Segoe UI",Roboto,system-ui,sans-serif; color:#0f172a; line-height:1.5; font-size:13px; }
+  .head { background:linear-gradient(135deg,var(--dark),var(--green)); color:#fff; padding:30px 40px; }
+  .head .logo { width:46px;height:46px;border-radius:12px;background:rgba(255,255,255,.15);display:inline-grid;place-items:center;font-size:24px;vertical-align:middle;margin-right:12px; }
+  .head h1 { display:inline-block; vertical-align:middle; font-size:24px; }
+  .head p { color:#bbf7d0; margin-top:8px; font-size:14px; }
+  .page { padding:24px 40px; }
+  h2 { color:var(--dark); font-size:16px; margin:20px 0 8px; padding-bottom:5px; border-bottom:2px solid var(--green); }
+  h3 { color:var(--green); font-size:14px; margin:14px 0 4px; }
+  table { width:100%; border-collapse:collapse; margin:8px 0 14px; font-size:12px; }
+  th,td { border:1px solid var(--border); padding:7px 9px; text-align:left; vertical-align:top; }
+  th { background:var(--dark); color:#fff; }
+  tbody tr:nth-child(even){ background:var(--bg); }
+  .box { background:var(--bg); border-left:4px solid var(--green); padding:10px 14px; border-radius:0 8px 8px 0; margin:10px 0; font-size:12.5px; }
+  .links { background:#ecfdf5; border:1px solid #a7f3d0; border-radius:10px; padding:12px 16px; margin:10px 0; font-size:13px; }
+  .links b { color:var(--dark); }
+  ul { margin:6px 0 12px 18px; }
+  li { margin-bottom:4px; }
+  .warn { background:#fef2f2; border-left:4px solid #ef4444; padding:10px 14px; border-radius:0 8px 8px 0; margin:10px 0; font-size:12.5px; }
+  .foot { margin-top:20px; padding-top:12px; border-top:1px solid var(--border); color:var(--muted); font-size:11.5px; text-align:center; }
+  @page { size:A4; margin:0; }
+</style>
+</head>
+<body>
+<div class="head">
+  <span class="logo">🎯</span><h1>Guion para presentar — PAL COTEJO</h1>
+  <p>Plataforma de reservas · Sport Bar &amp; Cancha Sintética · Duración: 5–7 minutos</p>
+</div>
+<div class="page">
+
+  <h2>✅ Antes de presentar (¡importante!)</h2>
+  <ul>
+    <li><b>Abre el link 2 minutos antes.</b> El servidor gratuito "se duerme"; la primera carga tarda ~40 seg. Si lo abres antes, ya estará rápido.</li>
+    <li>Ten a la mano, por si falla el internet: el <b>PDF de vista previa</b> y la <b>propuesta comercial</b>.</li>
+    <li>Ideal mostrarlo en un <b>celular</b> o proyectado en pantalla grande.</li>
+  </ul>
+
+  <div class="links">
+    🔗 <b>Página del cliente:</b> https://pal-cotejo-web.onrender.com<br>
+    🔗 <b>Panel de administración:</b> https://pal-cotejo-web.onrender.com/admin<br>
+    <span style="color:var(--muted);font-size:11px">(Reemplazar con el link real cuando esté listo.)</span>
+  </div>
+
+  <h2>🎬 Orden sugerido</h2>
+
+  <h3>1) Página del cliente — "Así reservan tus clientes" (2 min)</h3>
+  Haz una reserva en vivo, hablando mientras tanto:
+  <table>
+    <thead><tr><th>Pantalla</th><th>Qué decir</th></tr></thead>
+    <tbody>
+      <tr><td>Elegir cancha</td><td>"Tu cliente entra desde un link o un QR en el local, <b>sin descargar ninguna app</b>."</td></tr>
+      <tr><td>Elegir día</td><td>"Ve el calendario en tiempo real, desde el celular."</td></tr>
+      <tr><td>Elegir hora</td><td>"Los precios cambian solos — <b>hora pico más cara, hora valle más barata</b>. Tú lo configuras."</td></tr>
+      <tr><td>Sport Bar</td><td>"El plus: de una vez le ofrece <b>reservar mesa en el bar</b> para después del partido."</td></tr>
+      <tr><td>Pago</td><td>"Puede pagar el <b>50% de anticipo</b> y el resto en caja. Eso <b>evita que reserven y no lleguen</b>."</td></tr>
+      <tr><td>Confirmación</td><td>"Automáticamente le llega la <b>confirmación por WhatsApp</b>, con recordatorio antes del partido."</td></tr>
+    </tbody>
+  </table>
+  <div class="box">💡 La confirmación con WhatsApp es lo que más impacta. Tómate un segundo ahí.</div>
+
+  <h3>2) Panel de Administración — "Así controlas tu negocio" (2 min)</h3>
+  Arriba a la derecha, botón <b>"Admin"</b>:
+  <table>
+    <thead><tr><th>Sección</th><th>Qué decir</th></tr></thead>
+    <tbody>
+      <tr><td>Tarjetas de arriba</td><td>"De un vistazo: <b>ingresos del mes, reservas, ticket promedio</b>."</td></tr>
+      <tr><td>Gráfica de ingresos</td><td>"Tus ventas día por día."</td></tr>
+      <tr><td>Horas más rentables</td><td>"Esto es oro: te dice <b>a qué horas ganas más</b> para reforzar personal y bar."</td></tr>
+      <tr><td>Ocupación por cancha</td><td>"Qué cancha rinde más."</td></tr>
+      <tr><td>Top clientes</td><td>"Tu base de datos de clientes frecuentes."</td></tr>
+    </tbody>
+  </table>
+
+  <h3>3) Cierra con la propuesta (1–2 min)</h3>
+  Muestra los <b>3 planes</b> (Inicial, Esencial, Full). Recomienda el <b>Esencial</b> como
+  punto de equilibrio, con opción de crecer al Full.
+
+  <h2>❓ Si el cliente pregunta…</h2>
+  <table>
+    <tbody>
+      <tr><td><b>¿Hay que descargar una app?</b></td><td>"No. Es una web que funciona como app desde el celular. Cero fricción; reserva en segundos."</td></tr>
+      <tr><td><b>¿De quién es la página?</b></td><td>"Tuya al 100%. Se entrega el código, el dominio y los accesos a tu nombre."</td></tr>
+      <tr><td><b>¿Cuánto cuesta?</b></td><td>Muestra los 3 planes de la propuesta.</td></tr>
+      <tr><td><b>¿Ya funciona o es un dibujo?</b></td><td>"Funciona de verdad. Es el sistema real reservando y guardando datos."</td></tr>
+      <tr><td><b>¿Y los pagos?</b></td><td>"Se integra con Wompi (tarjeta, PSE, Nequi). En la demo está en modo prueba."</td></tr>
+    </tbody>
+  </table>
+
+  <div class="warn">
+    <b>Qué NO hacer:</b> no prometas fechas exactas ni precios distintos a la propuesta sin
+    confirmar con Solucionez. Si la demo va lenta, recuerda que es el servidor gratuito de
+    demostración, no el producto final.
+  </div>
+
+  <div class="foot">¿Dudas técnicas durante la presentación? · Solucionez · infra@solucionez.com</div>
+</div>
+</body>
+</html>
