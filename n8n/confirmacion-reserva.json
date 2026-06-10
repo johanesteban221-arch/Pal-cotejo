@@ -1,0 +1,86 @@
+{
+  "name": "PAL COTEJO - Confirmacion de reserva (WhatsApp + Email)",
+  "nodes": [
+    {
+      "id": "wh1",
+      "name": "Webhook Reserva Confirmada",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [240, 300],
+      "parameters": { "httpMethod": "POST", "path": "reserva-confirmada", "responseMode": "onReceived", "options": {} }
+    },
+    {
+      "id": "code1",
+      "name": "Armar mensajes",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [460, 300],
+      "parameters": {
+        "jsCode": "const d = $input.first().json.body || $input.first().json;\nconst cop = (n) => '$' + Number(n || 0).toLocaleString('es-CO');\nconst fechaHora = `${d.fecha} · ${d.horaInicio}-${d.horaFin}`;\nconst wa = `¡Hola ${d.clienteNombre}! 🎉 Tu reserva en PAL COTEJO quedó *CONFIRMADA*.\\n\\n🥅 ${d.cancha}\\n📅 ${fechaHora}\\n` +\n  (d.tieneMesa ? `🍻 Mesa para ${d.personasMesa}\\n` : '') +\n  `💵 Abono pagado: ${cop(d.montoAbonado)}\\n` +\n  (Number(d.saldoEnCaja) > 0 ? `Saldo en caja: ${cop(d.saldoEnCaja)}\\n` : 'Pago completo ✅\\n') +\n  `\\nCódigo: #${d.codigo}\\n¡Te esperamos! ⚽`;\nconst html = `<div style=\"font-family:sans-serif;max-width:480px\"><h2 style=\"color:#16a34a\">¡Reserva confirmada! ⚽</h2><p>Hola <b>${d.clienteNombre}</b>, tu reserva en <b>PAL COTEJO</b> quedó confirmada.</p><ul><li>🥅 ${d.cancha}</li><li>📅 ${fechaHora}</li>${d.tieneMesa ? `<li>🍻 Mesa para ${d.personasMesa}</li>` : ''}<li>💵 Abono pagado: ${cop(d.montoAbonado)}</li>${Number(d.saldoEnCaja) > 0 ? `<li>Saldo en caja: ${cop(d.saldoEnCaja)}</li>` : '<li>Pago completo ✅</li>'}</ul><p>Código: <b>#${d.codigo}</b></p></div>`;\nreturn [{ json: { ...d, whatsappText: wa, emailHtml: html, emailAsunto: `Reserva confirmada #${d.codigo} - PAL COTEJO` } }];"
+      }
+    },
+    {
+      "id": "wa1",
+      "name": "Enviar WhatsApp",
+      "type": "n8n-nodes-base.whatsApp",
+      "typeVersion": 1.1,
+      "position": [720, 200],
+      "parameters": {
+        "resource": "message",
+        "operation": "send",
+        "phoneNumberId": "REEMPLAZAR_PHONE_NUMBER_ID",
+        "recipientPhoneNumber": "={{ $json.clienteTelefono }}",
+        "messageType": "text",
+        "textBody": "={{ $json.whatsappText }}"
+      }
+    },
+    {
+      "id": "if1",
+      "name": "Tiene email?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [720, 420],
+      "parameters": {
+        "conditions": {
+          "options": { "version": 2, "leftValue": "", "caseSensitive": true, "typeValidation": "loose" },
+          "combinator": "and",
+          "conditions": [
+            { "id": "c1", "operator": { "type": "string", "operation": "notEmpty", "singleValue": true }, "leftValue": "={{ $json.clienteEmail }}", "rightValue": "" }
+          ]
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "mail1",
+      "name": "Enviar Email",
+      "type": "n8n-nodes-base.emailSend",
+      "typeVersion": 2.1,
+      "position": [960, 420],
+      "parameters": {
+        "fromEmail": "PAL COTEJO <reservas@palcotejo.co>",
+        "toEmail": "={{ $json.clienteEmail }}",
+        "subject": "={{ $json.emailAsunto }}",
+        "html": "={{ $json.emailHtml }}",
+        "options": {}
+      }
+    },
+    {
+      "id": "note1",
+      "name": "Nota",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [180, 80],
+      "parameters": {
+        "content": "## Confirmacion de reserva\nLa API de PAL COTEJO llama este webhook al aprobarse el pago. Envia WhatsApp + Email.\n\n**Pendiente para produccion:**\n- Conectar credenciales WhatsApp Cloud API y SMTP.\n- Mensajes iniciados por el negocio exigen PLANTILLA aprobada: cambiar 'Enviar WhatsApp' a 'Send Template'.",
+        "height": 220,
+        "width": 360
+      }
+    }
+  ],
+  "connections": {
+    "Webhook Reserva Confirmada": { "main": [[{ "node": "Armar mensajes", "type": "main", "index": 0 }]] },
+    "Armar mensajes": { "main": [[{ "node": "Enviar WhatsApp", "type": "main", "index": 0 }, { "node": "Tiene email?", "type": "main", "index": 0 }]] },
+    "Tiene email?": { "main": [[{ "node": "Enviar Email", "type": "main", "index": 0 }], []] }
+  }
+}

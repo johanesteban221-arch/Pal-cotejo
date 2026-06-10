@@ -87,15 +87,39 @@ export class PagosService {
     return { ok: true, aprobado };
   }
 
-  /** Dispara el flujo de n8n (WhatsApp + Email de confirmacion). */
+  /** Dispara el flujo de n8n (WhatsApp + Email de confirmacion) con los datos completos. */
   private async notificarN8n(reservaId: string) {
     const url = process.env.N8N_WEBHOOK_RESERVA_CONFIRMADA;
     if (!url) return;
     try {
+      const reserva = await this.prisma.reserva.findUnique({
+        where: { id: reservaId },
+        include: { cliente: true, cancha: true, reservaMesa: true },
+      });
+      if (!reserva) return;
+
+      // Payload plano y listo para que n8n arme el mensaje
+      const payload = {
+        reservaId: reserva.id,
+        codigo: reserva.id.slice(-6).toUpperCase(),
+        clienteNombre: reserva.cliente.nombre,
+        clienteTelefono: reserva.cliente.telefono, // formato +57...
+        clienteEmail: reserva.cliente.email ?? null,
+        cancha: reserva.cancha.nombre,
+        fecha: reserva.fecha.toISOString().slice(0, 10),
+        horaInicio: reserva.horaInicio,
+        horaFin: reserva.horaFin,
+        montoTotal: reserva.montoTotal,
+        montoAbonado: reserva.montoAbonado,
+        saldoEnCaja: reserva.saldo,
+        tieneMesa: !!reserva.reservaMesa,
+        personasMesa: reserva.reservaMesa?.personas ?? null,
+      };
+
       await fetch(url, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ reservaId }),
+        body: JSON.stringify(payload),
       });
     } catch (e) {
       this.logger.error(`No se pudo notificar a n8n: ${(e as Error).message}`);

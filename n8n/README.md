@@ -5,11 +5,15 @@ validan con el entorno n8n-mcp y se despliegan en la instancia self-hosted.
 
 ## Flujos previstos
 
-### 1. Confirmacion de reserva (WhatsApp + Email)
-- **Disparador:** Webhook `POST /webhook/reserva-confirmada` (lo llama el API al
-  aprobarse el pago en Wompi). Recibe `{ reservaId }`.
-- **Pasos:** consultar la reserva en la DB → armar mensaje → enviar plantilla por
-  WhatsApp Cloud API → enviar Email.
+### 1. Confirmacion de reserva (WhatsApp + Email) — ✅ ARMADO Y VALIDADO
+- **Archivo:** [`confirmacion-reserva.json`](confirmacion-reserva.json) (validado con n8n-mcp, 0 errores).
+- **Estado:** listo para importar; NO desplegado en la instancia todavia (a la espera de
+  credenciales de WhatsApp Cloud API y SMTP).
+- **Disparador:** Webhook `POST /webhook/reserva-confirmada` (lo llama el API al aprobarse
+  el pago). El API envia el payload COMPLETO (cliente, cancha, fecha, hora, montos, mesa).
+- **Pasos:** Code arma el mensaje → Enviar WhatsApp + (si hay correo) Enviar Email.
+- **Para produccion:** conectar credenciales y cambiar WhatsApp a 'Send Template' con
+  plantilla aprobada por Meta.
 
 ### 2. Recordatorio de juego
 - **Disparador:** Schedule (cada hora).
