@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import {
   Resumen,
   PuntoDiario,
@@ -213,18 +214,21 @@ export default function Admin() {
 
       {/* Acciones admin (módulos) */}
       <div className="grid-2b">
-        <div className="card hover">
-          <div className="h2">🛠️ Gestión de canchas</div>
+        <Link href="/admin/gestion" className="card hover" style={{ display: "block" }}>
+          <div className="section-title">
+            <div className="h2">🛠️ Gestión operativa</div>
+            <span className="pill green">Abrir →</span>
+          </div>
           <div className="sub" style={{ marginTop: 6 }}>
             Bloquea por mantenimiento, torneos o eventos privados. Ingresa reservas manuales
-            de clientes que llaman o llegan al local.
+            de clientes que llaman o llegan al local, y administra clientes fijos.
           </div>
           <div style={{ marginTop: 10, display: "flex", gap: 8, flexWrap: "wrap" }}>
             <span className="pill green">Reservas manuales</span>
             <span className="pill amber">Bloqueos</span>
             <span className="pill blue">Recurrentes</span>
           </div>
-        </div>
+        </Link>
         <div className="card hover">
           <div className="h2">📊 Reportes exportables</div>
           <div className="sub" style={{ marginTop: 6 }}>

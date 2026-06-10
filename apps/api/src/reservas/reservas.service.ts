@@ -1,7 +1,7 @@
 import { BadRequestException, Injectable, NotFoundException } from "@nestjs/common";
 import { PrismaService } from "../prisma/prisma.service";
 import { DisponibilidadService } from "../disponibilidad/disponibilidad.service";
-import { CrearReservaDto } from "./dto";
+import { CrearReservaDto, CrearReservaManualDto } from "./dto";
 
 @Injectable()
 export class ReservasService {
@@ -82,6 +82,46 @@ export class ReservasService {
       saldoEnCaja: saldo,
       estado: reserva.estado,
     };
+  }
+
+  /**
+   * Crea una reserva MANUAL desde caja (ya CONFIRMADA, sin pago en linea).
+   * Si `pagado` es true, se marca el total como pagado; si no, queda saldo en caja.
+   */
+  async crearManual(dto: CrearReservaManualDto) {
+    const slots = await this.disponibilidad.porCanchaYFecha(dto.canchaId, dto.fecha);
+    const slot = slots.find(
+      (s) => s.horaInicio === dto.horaInicio && s.horaFin === dto.horaFin,
+    );
+    if (!slot) throw new BadRequestException("La franja solicitada no existe en la grilla");
+    if (!slot.disponible) throw new BadRequestException(`Franja no disponible: ${slot.motivo ?? ""}`);
+    if (slot.precio == null) throw new BadRequestException("Sin tarifa configurada para la franja");
+
+    const montoTotal = slot.precio;
+    const montoAbonado = dto.pagado ? montoTotal : 0;
+    const saldo = montoTotal - montoAbonado;
+
+    const cliente = await this.prisma.cliente.upsert({
+      where: { telefono: dto.telefono },
+      update: { nombre: dto.nombre, email: dto.email },
+      create: { nombre: dto.nombre, telefono: dto.telefono, email: dto.email },
+    });
+
+    const reserva = await this.prisma.reserva.create({
+      data: {
+        canchaId: dto.canchaId,
+        clienteId: cliente.id,
+        fecha: new Date(dto.fecha + "T00:00:00"),
+        horaInicio: dto.horaInicio,
+        horaFin: dto.horaFin,
+        estado: "CONFIRMADA",
+        origen: "MANUAL",
+        montoTotal,
+        montoAbonado,
+        saldo,
+      },
+    });
+    return { reservaId: reserva.id, montoTotal, montoAbonado, saldo, estado: reserva.estado };
   }
 
   /**

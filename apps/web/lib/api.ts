@@ -71,6 +71,53 @@ export const getHorasRentables = () => getJSON<HoraRentable[]>("/api/reportes/ho
 export const getOcupacion = () => getJSON<Ocupacion[]>("/api/reportes/ocupacion-canchas");
 export const getTopClientes = () => getJSON<TopCliente[]>("/api/reportes/top-clientes");
 
+// ── Gestión admin (bloqueos, reserva manual, recurrentes) ──
+async function send<T>(method: string, path: string, body?: unknown): Promise<T> {
+  const res = await fetch(`${API}${path}`, {
+    method,
+    headers: { "Content-Type": "application/json", ...authHeaders() },
+    body: body ? JSON.stringify(body) : undefined,
+  });
+  if (res.status === 401) throw new NoAutorizado();
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.message || `Error en ${path}`);
+  }
+  return res.status === 200 || res.status === 201 ? res.json() : ({} as T);
+}
+
+export interface Bloqueo {
+  id: string;
+  canchaId: string;
+  inicio: string;
+  fin: string;
+  motivo: string;
+  nota?: string;
+  cancha?: { nombre: string };
+}
+export interface Recurrente {
+  id: string;
+  frecuencia: "SEMANAL" | "MENSUAL";
+  diaSemana: number;
+  horaInicio: string;
+  horaFin: string;
+  cancha?: { nombre: string };
+  cliente?: { nombre: string; telefono: string };
+  _count?: { reservas: number };
+}
+
+export const getBloqueos = () => getJSON<Bloqueo[]>("/api/bloqueos");
+export const crearBloqueo = (b: Record<string, unknown>) => send("POST", "/api/bloqueos", b);
+export const eliminarBloqueo = (id: string) => send("DELETE", `/api/bloqueos/${id}`);
+
+export const crearReservaManual = (r: Record<string, unknown>) => send("POST", "/api/reservas/manual", r);
+
+export const getRecurrentes = () => getJSON<Recurrente[]>("/api/recurrentes");
+export const crearRecurrente = (r: Record<string, unknown>) => send("POST", "/api/recurrentes", r);
+export const eliminarRecurrente = (id: string) => send("DELETE", `/api/recurrentes/${id}`);
+export const generarRecurrente = (id: string, cantidad = 4) =>
+  send<{ creadas: number; omitidas: number; total: number }>("POST", `/api/recurrentes/${id}/generar?cantidad=${cantidad}`);
+
 export function formatoCOP(valor: number): string {
   return new Intl.NumberFormat("es-CO", {
     style: "currency",
