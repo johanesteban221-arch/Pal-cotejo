@@ -6,6 +6,9 @@ El orden respeta las dependencias técnicas (lo de abajo necesita lo de arriba).
 > **Estado base (ya hecho):** modelo de datos, motor de disponibilidad y tarifas, creación
 > de reservas con abono, política de cancelación (lógica), webhook Wompi (base), panel de
 > reportes (visual), demo desplegada en la nube.
+>
+> **Avance:** ✅ Fase 1 (auth staff JWT) · ✅ Fase 3 (gestión admin: bloqueos, reservas
+> manuales, recurrentes) · ⏸️ Fase 2 (pagos) en pausa hasta que el cliente defina la pasarela.
 
 ---
 
