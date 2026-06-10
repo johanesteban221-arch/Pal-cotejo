@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 import {
   Resumen,
   PuntoDiario,
@@ -15,22 +16,42 @@ import {
   formatoCOP,
   formatoCorto,
 } from "../../lib/api";
+import { getToken, getUser, logout, NoAutorizado, StaffUser } from "../../lib/auth";
 
 const DIAS = ["D", "L", "M", "M", "J", "V", "S"];
 
 export default function Admin() {
+  const router = useRouter();
+  const [usuario, setUsuario] = useState<StaffUser | null>(null);
   const [resumen, setResumen] = useState<Resumen | null>(null);
   const [diarios, setDiarios] = useState<PuntoDiario[]>([]);
   const [horas, setHoras] = useState<HoraRentable[]>([]);
   const [ocup, setOcup] = useState<Ocupacion[]>([]);
   const [top, setTop] = useState<TopCliente[]>([]);
 
+  function salir() {
+    logout();
+    router.replace("/admin/login");
+  }
+
   useEffect(() => {
-    getResumen().then(setResumen);
-    getIngresosDiarios(30).then((d) => setDiarios(d.slice(-14)));
-    getHorasRentables().then(setHoras);
-    getOcupacion().then(setOcup);
-    getTopClientes().then(setTop);
+    // Guardia de sesión: sin token → al login
+    if (!getToken()) {
+      router.replace("/admin/login");
+      return;
+    }
+    setUsuario(getUser());
+
+    // Si cualquier petición devuelve 401, cerramos sesión
+    const onError = (e: unknown) => {
+      if (e instanceof NoAutorizado) salir();
+    };
+    getResumen().then(setResumen).catch(onError);
+    getIngresosDiarios(30).then((d) => setDiarios(d.slice(-14))).catch(onError);
+    getHorasRentables().then(setHoras).catch(onError);
+    getOcupacion().then(setOcup).catch(onError);
+    getTopClientes().then(setTop).catch(onError);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const maxDia = Math.max(1, ...diarios.map((d) => d.ingresos));
@@ -53,7 +74,16 @@ export default function Admin() {
       <div className="eyebrow">Panel de administración</div>
       <div className="section-title">
         <div className="h1" style={{ margin: 0 }}>Dashboard de operación</div>
-        <span className="pill green">● En vivo</span>
+        <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+          {usuario && (
+            <span className="pill muted">
+              {usuario.nombre} · {usuario.rol}
+            </span>
+          )}
+          <button className="btn ghost" style={{ width: "auto", padding: "8px 14px" }} onClick={salir}>
+            Salir
+          </button>
+        </div>
       </div>
       <div className="sub" style={{ marginBottom: 18 }}>
         Toma de decisiones con datos reales · Compatible con tablet y móvil

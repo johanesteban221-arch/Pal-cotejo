@@ -1,3 +1,5 @@
+import { authHeaders, NoAutorizado } from "./auth";
+
 const API = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001";
 
 export interface Cancha {
@@ -54,7 +56,11 @@ export interface Ocupacion { cancha: string; reservas: number; ingresos: number;
 export interface TopCliente { nombre: string; telefono: string; reservas: number; }
 
 async function getJSON<T>(path: string): Promise<T> {
-  const res = await fetch(`${API}${path}`, { cache: "no-store" });
+  const res = await fetch(`${API}${path}`, {
+    cache: "no-store",
+    headers: { ...authHeaders() },
+  });
+  if (res.status === 401) throw new NoAutorizado();
   if (!res.ok) throw new Error(`Error cargando ${path}`);
   return res.json();
 }

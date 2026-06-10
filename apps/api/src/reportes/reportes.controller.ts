@@ -1,6 +1,9 @@
-import { Controller, Get, Query } from "@nestjs/common";
+import { Controller, Get, Query, UseGuards } from "@nestjs/common";
 import { ReportesService } from "./reportes.service";
+import { JwtAuthGuard } from "../auth/jwt-auth.guard";
 
+// Todos los reportes requieren sesión de staff (ADMIN o CAJA).
+@UseGuards(JwtAuthGuard)
 @Controller("reportes")
 export class ReportesController {
   constructor(private readonly reportes: ReportesService) {}

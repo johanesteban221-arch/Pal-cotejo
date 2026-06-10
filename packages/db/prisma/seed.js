@@ -4,12 +4,12 @@
 // que el panel de reportes se vea lleno.
 // Ejecutar: npm run prisma:seed --workspace @sportbar/db
 const { PrismaClient } = require("@prisma/client");
-const crypto = require("crypto");
+const bcrypt = require("bcryptjs");
 
 const prisma = new PrismaClient();
 
-function sha256(s) {
-  return crypto.createHash("sha256").update(s).digest("hex");
+function hash(s) {
+  return bcrypt.hashSync(s, 10);
 }
 
 // PRNG determinista para que la demo sea reproducible.
@@ -202,15 +202,22 @@ async function main() {
     },
   });
 
-  // ── Usuario admin ──
-  await prisma.usuarioStaff.upsert({
-    where: { email: "admin@sportbar.co" },
-    update: {},
-    create: {
+  // ── Usuarios de staff (contraseñas con bcrypt) ──
+  await prisma.usuarioStaff.deleteMany();
+  await prisma.usuarioStaff.create({
+    data: {
       nombre: "Administrador",
-      email: "admin@sportbar.co",
-      passwordHash: sha256("admin123"),
+      email: "admin@palcotejo.co",
+      passwordHash: hash("admin123"), // CAMBIAR en produccion
       rol: "ADMIN",
+    },
+  });
+  await prisma.usuarioStaff.create({
+    data: {
+      nombre: "Cajero",
+      email: "caja@palcotejo.co",
+      passwordHash: hash("caja123"), // CAMBIAR en produccion
+      rol: "CAJA",
     },
   });
 

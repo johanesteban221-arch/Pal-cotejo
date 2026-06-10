@@ -14,7 +14,9 @@ Guía rápida para mostrarle la plataforma al cliente. Toda la presentación dur
 - **Página del cliente:** `https://pal-cotejo-web.onrender.com`
 - **Panel de administración:** `https://pal-cotejo-web.onrender.com/admin`
 
-*(Reemplaza con el link real cuando esté listo.)*
+## 🔐 Acceso al panel (es privado — eso demuestra seguridad)
+- **Correo:** `admin@palcotejo.co`
+- **Contraseña:** `admin123`
 
 ---
 
@@ -35,7 +37,8 @@ Haz una **reserva en vivo**, paso a paso, hablando mientras tanto:
 > 💡 La confirmación con el WhatsApp es la parte que más impacta. Tómate un segundo ahí.
 
 ### 2) Cambia al Panel de Administración — "Así controlas tu negocio" (2 min)
-Arriba a la derecha hay un botón **"Admin"**. Haz clic y muestra:
+Haz clic en **"Admin"** (arriba a la derecha) e inicia sesión con el correo y contraseña de
+arriba. 💡 *Tip de venta:* "El panel es privado, solo entra tu personal." Luego muestra:
 
 | Sección | Qué decir |
 |---|---|

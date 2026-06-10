@@ -6,6 +6,10 @@ Te paso todo para la presentación de la plataforma de reservas de PAL COTEJO (l
    • Página del cliente: https://pal-cotejo-web.onrender.com
    • Panel del dueño:     https://pal-cotejo-web.onrender.com/admin
 
+🔐 El panel del dueño es PRIVADO (eso es bueno, demuestra seguridad). Para entrar:
+   • Correo:     admin@palcotejo.co
+   • Contraseña: admin123
+
 📎 Te adjunto:
    1. Guion de la presentación (qué mostrar y qué decir, paso a paso)
    2. Vista previa del producto en PDF (por si falla el internet)
