@@ -1,0 +1,86 @@
+{
+  "name": "PAL COTEJO - Reporte diario al dueno",
+  "nodes": [
+    {
+      "id": "sch1",
+      "name": "Diario 23:00",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.3,
+      "position": [220, 300],
+      "parameters": { "rule": { "interval": [{ "field": "days", "triggerAtHour": 23 }] } }
+    },
+    {
+      "id": "http1",
+      "name": "Obtener reporte",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [440, 300],
+      "parameters": {
+        "method": "GET",
+        "url": "https://pal-cotejo-api.onrender.com/api/integracion/reporte-diario",
+        "sendHeaders": true,
+        "specifyHeaders": "keypair",
+        "headerParameters": { "parameters": [{ "name": "x-api-key", "value": "REEMPLAZAR_API_KEY" }] },
+        "options": {}
+      }
+    },
+    {
+      "id": "code1",
+      "name": "Armar reporte",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [660, 300],
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "const d = $json;\nconst cop = (n) => '$' + Number(n || 0).toLocaleString('es-CO');\nconst wa = `📊 *Reporte del día - PAL COTEJO*\\n${d.fecha}\\n\\n• Reservas: ${d.reservas}\\n• Ingresos: ${cop(d.ingresos)}\\n• Saldo en caja: ${cop(d.saldoPendienteCaja)}\\n• Mesas del bar: ${d.mesasBar}\\n• Hora más activa: ${d.horaMasActiva}`;\nconst html = `<div style=\"font-family:sans-serif\"><h2 style=\"color:#16a34a\">Reporte del día - PAL COTEJO</h2><p>${d.fecha}</p><ul><li>Reservas: ${d.reservas}</li><li>Ingresos: ${cop(d.ingresos)}</li><li>Saldo en caja: ${cop(d.saldoPendienteCaja)}</li><li>Mesas del bar: ${d.mesasBar}</li><li>Hora más activa: ${d.horaMasActiva}</li></ul></div>`;\nreturn { json: { ...d, whatsappText: wa, emailHtml: html, emailAsunto: 'Reporte diario PAL COTEJO ' + d.fecha } };"
+      }
+    },
+    {
+      "id": "wa1",
+      "name": "WhatsApp al dueno",
+      "type": "n8n-nodes-base.whatsApp",
+      "typeVersion": 1.1,
+      "position": [880, 300],
+      "parameters": {
+        "resource": "message",
+        "operation": "send",
+        "phoneNumberId": "REEMPLAZAR_PHONE_NUMBER_ID",
+        "recipientPhoneNumber": "REEMPLAZAR_NUMERO_DUENO",
+        "messageType": "text",
+        "textBody": "={{ $json.whatsappText }}"
+      }
+    },
+    {
+      "id": "mail1",
+      "name": "Email al dueno",
+      "type": "n8n-nodes-base.emailSend",
+      "typeVersion": 2.1,
+      "position": [1100, 300],
+      "parameters": {
+        "fromEmail": "PAL COTEJO <reportes@palcotejo.co>",
+        "toEmail": "REEMPLAZAR_CORREO_DUENO",
+        "subject": "={{ $json.emailAsunto }}",
+        "html": "={{ $json.emailHtml }}",
+        "options": {}
+      }
+    },
+    {
+      "id": "note1",
+      "name": "Nota",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [180, 80],
+      "parameters": {
+        "content": "## Reporte diario al dueno\nCada noche a las 23:00 consulta el resumen del dia y lo envia al dueno por WhatsApp y luego por Email.\n\nPendiente: API key real, numero/correo del dueno y credenciales WhatsApp/SMTP.",
+        "height": 200,
+        "width": 360
+      }
+    }
+  ],
+  "connections": {
+    "Diario 23:00": { "main": [[{ "node": "Obtener reporte", "type": "main", "index": 0 }]] },
+    "Obtener reporte": { "main": [[{ "node": "Armar reporte", "type": "main", "index": 0 }]] },
+    "Armar reporte": { "main": [[{ "node": "WhatsApp al dueno", "type": "main", "index": 0 }]] },
+    "WhatsApp al dueno": { "main": [[{ "node": "Email al dueno", "type": "main", "index": 0 }]] }
+  }
+}

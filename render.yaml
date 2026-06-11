@@ -37,6 +37,8 @@ services:
         generateValue: true
       - key: JWT_EXPIRES_IN
         value: "7d"
+      - key: N8N_INTEGRATION_KEY
+        generateValue: true
       - key: WOMPI_BASE_URL
         value: https://sandbox.wompi.co/v1
       - key: WOMPI_PUBLIC_KEY

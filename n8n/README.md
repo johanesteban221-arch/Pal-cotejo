@@ -15,15 +15,20 @@ validan con el entorno n8n-mcp y se despliegan en la instancia self-hosted.
 - **Para produccion:** conectar credenciales y cambiar WhatsApp a 'Send Template' con
   plantilla aprobada por Meta.
 
-### 2. Recordatorio de juego
+### 2. Recordatorio de juego — ✅ ARMADO Y VALIDADO
+- **Archivo:** [`recordatorio-juego.json`](recordatorio-juego.json) (validado, 0 errores).
 - **Disparador:** Schedule (cada hora).
-- **Pasos:** buscar reservas CONFIRMADAS que empiezan en ~3 h y aun sin recordatorio
-  → enviar WhatsApp + Email → marcar recordatorio enviado.
+- **Pasos:** GET `/api/integracion/recordatorios` (reservas que empiezan en ~3 h, no
+  recordadas) → armar mensaje → WhatsApp → POST `/api/integracion/recordatorios/marcar`.
 
-### 3. Reporte diario de ingresos
-- **Disparador:** Schedule (diario, ej. 23:00).
-- **Pasos:** agregar pagos APROBADOS del dia → calcular horas mas rentables y
-  ocupacion → enviar resumen al dueño por WhatsApp/Email.
+### 3. Reporte diario de ingresos — ✅ ARMADO Y VALIDADO
+- **Archivo:** [`reporte-diario.json`](reporte-diario.json) (validado, 0 errores).
+- **Disparador:** Schedule (diario, 23:00).
+- **Pasos:** GET `/api/integracion/reporte-diario` → armar resumen → WhatsApp + Email al dueño.
+
+> **Endpoints de integración:** los flujos 2 y 3 consumen la API de PAL COTEJO en
+> `/api/integracion/*`, protegida con header `x-api-key` (variable `N8N_INTEGRATION_KEY`).
+> Reemplazar `REEMPLAZAR_API_KEY` en los nodos HTTP con esa clave.
 
 ### 4. Gestion de cancelacion / reembolso
 - **Disparador:** Webhook desde el API al cancelar una reserva.

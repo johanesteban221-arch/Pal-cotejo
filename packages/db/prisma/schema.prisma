@@ -143,6 +143,9 @@ model Reserva {
   montoAbonado Int @default(0) // pagado en linea
   saldo        Int @default(0) // pendiente en caja
 
+  // Recordatorio de juego (para no enviarlo dos veces vía n8n)
+  recordatorioEnviado Boolean @default(false)
+
   // Recurrencia origen (si fue generada por una regla)
   recurrenteId String?
 

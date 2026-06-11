@@ -1,0 +1,90 @@
+{
+  "name": "PAL COTEJO - Recordatorio de juego",
+  "nodes": [
+    {
+      "id": "sch1",
+      "name": "Cada hora",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.3,
+      "position": [220, 300],
+      "parameters": { "rule": { "interval": [{ "field": "hours", "hoursInterval": 1 }] } }
+    },
+    {
+      "id": "http1",
+      "name": "Obtener recordatorios",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [440, 300],
+      "parameters": {
+        "method": "GET",
+        "url": "https://pal-cotejo-api.onrender.com/api/integracion/recordatorios",
+        "sendHeaders": true,
+        "specifyHeaders": "keypair",
+        "headerParameters": { "parameters": [{ "name": "x-api-key", "value": "REEMPLAZAR_API_KEY" }] },
+        "options": {}
+      }
+    },
+    {
+      "id": "code1",
+      "name": "Armar recordatorio",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [660, 300],
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "const d = $json;\nconst wa = `⏰ *Recordatorio PAL COTEJO*\\n\\nHola ${d.clienteNombre}, te esperamos hoy:\\n🥅 ${d.cancha}\\n🕒 ${d.horaInicio}\\n\\nCódigo: #${d.codigo}\\n¡Nos vemos en la cancha! ⚽`;\nreturn { json: { ...d, whatsappText: wa } };"
+      }
+    },
+    {
+      "id": "wa1",
+      "name": "Enviar WhatsApp",
+      "type": "n8n-nodes-base.whatsApp",
+      "typeVersion": 1.1,
+      "position": [880, 300],
+      "parameters": {
+        "resource": "message",
+        "operation": "send",
+        "phoneNumberId": "REEMPLAZAR_PHONE_NUMBER_ID",
+        "recipientPhoneNumber": "={{ $json.clienteTelefono }}",
+        "messageType": "text",
+        "textBody": "={{ $json.whatsappText }}"
+      }
+    },
+    {
+      "id": "http2",
+      "name": "Marcar recordado",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [1100, 300],
+      "parameters": {
+        "method": "POST",
+        "url": "https://pal-cotejo-api.onrender.com/api/integracion/recordatorios/marcar",
+        "sendHeaders": true,
+        "specifyHeaders": "keypair",
+        "headerParameters": { "parameters": [{ "name": "x-api-key", "value": "REEMPLAZAR_API_KEY" }] },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ ids: [$json.reservaId] }) }}",
+        "options": {}
+      }
+    },
+    {
+      "id": "note1",
+      "name": "Nota",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [180, 100],
+      "parameters": {
+        "content": "## Recordatorio de juego\nCada hora consulta la API por reservas que empiezan en ~3h y envia recordatorio por WhatsApp, luego las marca para no repetir.\n\nPendiente: API key real, credenciales WhatsApp (y plantilla para produccion).",
+        "height": 200,
+        "width": 360
+      }
+    }
+  ],
+  "connections": {
+    "Cada hora": { "main": [[{ "node": "Obtener recordatorios", "type": "main", "index": 0 }]] },
+    "Obtener recordatorios": { "main": [[{ "node": "Armar recordatorio", "type": "main", "index": 0 }]] },
+    "Armar recordatorio": { "main": [[{ "node": "Enviar WhatsApp", "type": "main", "index": 0 }]] },
+    "Enviar WhatsApp": { "main": [[{ "node": "Marcar recordado", "type": "main", "index": 0 }]] }
+  }
+}
