@@ -65,6 +65,52 @@ async function getJSON<T>(path: string): Promise<T> {
   return res.json();
 }
 
+export interface DashboardData {
+  fecha: string;
+  ingresosHoy: number;
+  reservasActivas: number;
+  ticketPromedio: number;
+  cancelaciones: number;
+  ocupacion: number;
+  ingresosSemana: number;
+  ingresosUltimos7: { fecha: string; ingresos: number }[];
+  reservasHoy: {
+    codigo: string;
+    cliente: string;
+    cancha: string;
+    horaInicio: string;
+    horaFin: string;
+    monto: number;
+    estado: string;
+  }[];
+}
+export const getDashboard = () => getJSON<DashboardData>("/api/reportes/dashboard");
+
+export interface ReservaAdmin {
+  id: string;
+  horaInicio: string;
+  horaFin: string;
+  estado: string;
+  origen: string;
+  montoTotal: number;
+  montoAbonado: number;
+  saldo: number;
+  cancha: { nombre: string };
+  cliente: { nombre: string; telefono: string };
+}
+export const getReservasPorFecha = (fecha: string) =>
+  getJSON<ReservaAdmin[]>(`/api/reservas?fecha=${fecha}`);
+
+export interface Tarifa {
+  id: string;
+  diaSemana: number | null;
+  horaInicio: string;
+  horaFin: string;
+  precio: number;
+  tipo: "PICO" | "VALLE";
+}
+export const getCanchaDetalle = (id: string) =>
+  getJSON<Cancha & { tarifas: Tarifa[] }>(`/api/canchas/${id}`);
 export const getResumen = () => getJSON<Resumen>("/api/reportes/resumen");
 export const getIngresosDiarios = (dias = 30) => getJSON<PuntoDiario[]>(`/api/reportes/ingresos-diarios?dias=${dias}`);
 export const getHorasRentables = () => getJSON<HoraRentable[]>("/api/reportes/horas-rentables");

@@ -94,6 +94,84 @@ export class ReportesService {
     return out;
   }
 
+  /** KPIs + datos del dashboard admin (lo que pide el diseño aprobado). */
+  async dashboard() {
+    const OFFSET = 5 * 3600 * 1000; // Colombia UTC-5
+    const fechaCol = new Date(Date.now() - OFFSET).toISOString().slice(0, 10);
+    const hoy = new Date(`${fechaCol}T00:00:00`);
+    const hace7 = new Date(hoy);
+    hace7.setDate(hoy.getDate() - 6);
+
+    const [reservasHoyRaw, semana, canchas, mes] = await Promise.all([
+      this.prisma.reserva.findMany({
+        where: { fecha: hoy },
+        include: { cliente: true, cancha: true },
+        orderBy: { horaInicio: "asc" },
+      }),
+      this.prisma.reserva.findMany({
+        where: { estado: { in: ESTADOS_VALIDOS as any }, fecha: { gte: hace7, lte: hoy } },
+        select: { fecha: true, montoTotal: true },
+      }),
+      this.prisma.cancha.count({ where: { activa: true } }),
+      this.prisma.reserva.findMany({
+        where: {
+          estado: { in: ESTADOS_VALIDOS as any },
+          fecha: { gte: new Date(`${fechaCol.slice(0, 7)}-01T00:00:00`) },
+        },
+        select: { montoTotal: true },
+      }),
+    ]);
+
+    const validas = reservasHoyRaw.filter((r) => ["CONFIRMADA", "COMPLETADA"].includes(r.estado));
+    const ingresosHoy = validas.reduce((s, r) => s + r.montoTotal, 0);
+    const cancelaciones = reservasHoyRaw.filter((r) => r.estado === "CANCELADA").length;
+    const reservasActivas = await this.prisma.reserva.count({
+      where: { estado: "CONFIRMADA", fecha: { gte: hoy } },
+    });
+    const ticket = mes.length ? Math.round(mes.reduce((s, r) => s + r.montoTotal, 0) / mes.length) : 0;
+    const ingresosSemana = semana.reduce((s, r) => s + r.montoTotal, 0);
+
+    // Ocupación aproximada de hoy (17 franjas 06-23 por cancha)
+    const capacidad = Math.max(1, canchas * 17);
+    const ocupacion = Math.min(100, Math.round((validas.length / capacidad) * 100));
+
+    // Ingresos por día (últimos 7) para la gráfica de barras
+    const mapaDia = new Map<string, number>();
+    for (const r of semana) {
+      const k = r.fecha.toISOString().slice(0, 10);
+      mapaDia.set(k, (mapaDia.get(k) ?? 0) + r.montoTotal);
+    }
+    const ingresosUltimos7: { fecha: string; ingresos: number }[] = [];
+    for (let i = 0; i < 7; i++) {
+      const d = new Date(hace7);
+      d.setDate(hace7.getDate() + i);
+      const k = d.toISOString().slice(0, 10);
+      ingresosUltimos7.push({ fecha: k, ingresos: mapaDia.get(k) ?? 0 });
+    }
+
+    const reservasHoy = reservasHoyRaw.map((r) => ({
+      codigo: r.id.slice(-6).toUpperCase(),
+      cliente: r.cliente.nombre,
+      cancha: r.cancha.nombre,
+      horaInicio: r.horaInicio,
+      horaFin: r.horaFin,
+      monto: r.montoTotal,
+      estado: r.estado,
+    }));
+
+    return {
+      fecha: fechaCol,
+      ingresosHoy,
+      reservasActivas,
+      ticketPromedio: ticket,
+      cancelaciones,
+      ocupacion,
+      ingresosSemana,
+      ingresosUltimos7,
+      reservasHoy,
+    };
+  }
+
   /** Ranking de clientes por nro de reservas (base de datos de clientes). */
   async topClientes(limite = 5) {
     const clientes = await this.prisma.cliente.findMany({

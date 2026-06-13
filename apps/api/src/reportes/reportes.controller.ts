@@ -8,6 +8,11 @@ import { JwtAuthGuard } from "../auth/jwt-auth.guard";
 export class ReportesController {
   constructor(private readonly reportes: ReportesService) {}
 
+  @Get("dashboard")
+  dashboard() {
+    return this.reportes.dashboard();
+  }
+
   @Get("resumen")
   resumen() {
     return this.reportes.resumen();

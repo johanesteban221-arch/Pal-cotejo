@@ -11,7 +11,6 @@ export default function LoginPage() {
   const [error, setError] = useState("");
   const [cargando, setCargando] = useState(false);
 
-  // Si ya hay sesión, ir directo al panel
   useEffect(() => {
     if (getToken()) router.replace("/admin");
   }, [router]);
@@ -31,71 +30,61 @@ export default function LoginPage() {
   }
 
   return (
-    <main className="phone-wrap" style={{ paddingTop: 60 }}>
-      <div style={{ textAlign: "center", marginBottom: 24 }}>
-        <div className="success-ring" style={{ background: "none" }}>
-          <div
-            style={{
-              width: 64, height: 64, borderRadius: 16,
-              background: "linear-gradient(135deg, var(--green), var(--green-2))",
-              display: "grid", placeItems: "center", fontSize: 30,
-              boxShadow: "0 8px 30px var(--green-glow)",
-            }}
-          >
-            🔐
+    <div
+      style={{
+        minHeight: "100vh",
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        padding: 24,
+        background: "var(--bg)",
+      }}
+    >
+      <div style={{ width: "100%", maxWidth: 380 }}>
+        <div style={{ textAlign: "center", marginBottom: 24 }}>
+          <div className="footer-logo" style={{ marginBottom: 4 }}>
+            PAL COTEJO
+          </div>
+          <div className="muted" style={{ fontSize: 12, letterSpacing: 2, textTransform: "uppercase", fontFamily: "var(--font-d)" }}>
+            Panel administrativo
           </div>
         </div>
-        <div className="h1" style={{ marginTop: 8 }}>Panel PAL COTEJO</div>
-        <div className="sub">Acceso para el personal</div>
-      </div>
-
-      <form onSubmit={entrar} className="card">
-        <label className="sub" style={{ display: "block", marginBottom: 6 }}>Correo</label>
-        <input
-          className="campo"
-          type="email"
-          placeholder="admin@palcotejo.co"
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
-          required
-          style={inputStyle}
-        />
-        <label className="sub" style={{ display: "block", margin: "10px 0 6px" }}>Contraseña</label>
-        <input
-          className="campo"
-          type="password"
-          placeholder="••••••••"
-          value={password}
-          onChange={(e) => setPassword(e.target.value)}
-          required
-          style={inputStyle}
-        />
-
-        {error && (
-          <div style={{ color: "#f87171", fontSize: 13, marginTop: 12, textAlign: "center" }}>
-            ⚠️ {error}
+        <form onSubmit={entrar} className="pago-card" style={{ maxWidth: "none" }}>
+          <div className="form-group">
+            <label className="form-label">Correo</label>
+            <input
+              className="form-input"
+              type="email"
+              placeholder="admin@palcotejo.co"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              required
+            />
           </div>
-        )}
-
-        <button className="btn" type="submit" disabled={cargando} style={{ marginTop: 18 }}>
-          {cargando ? "Entrando…" : "Iniciar sesión"}
-        </button>
-      </form>
-
-      <div className="sub" style={{ textAlign: "center", marginTop: 16, fontSize: 12 }}>
-        Acceso restringido · Solo personal autorizado
+          <div className="form-group">
+            <label className="form-label">Contraseña</label>
+            <input
+              className="form-input"
+              type="password"
+              placeholder="••••••••"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              required
+            />
+          </div>
+          {error && (
+            <div className="err" style={{ fontSize: 13, marginBottom: 12, textAlign: "center" }}>
+              ⚠️ {error}
+            </div>
+          )}
+          <button className="btn-gold" type="submit" disabled={cargando} style={{ width: "100%" }}>
+            {cargando ? "Entrando…" : "Iniciar sesión"}
+          </button>
+        </form>
+        <div className="muted" style={{ textAlign: "center", marginTop: 16, fontSize: 12 }}>
+          Acceso restringido · Solo personal autorizado
+        </div>
       </div>
-    </main>
+    </div>
   );
 }
-
-const inputStyle: React.CSSProperties = {
-  width: "100%",
-  padding: 13,
-  borderRadius: 12,
-  border: "1px solid var(--border-2)",
-  background: "var(--bg-2)",
-  color: "var(--text)",
-  fontSize: 15,
-  outline: "none",
-};
