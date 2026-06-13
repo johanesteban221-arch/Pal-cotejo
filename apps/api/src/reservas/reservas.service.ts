@@ -1,7 +1,16 @@
-import { BadRequestException, Injectable, NotFoundException } from "@nestjs/common";
+import {
+  BadRequestException,
+  ConflictException,
+  Injectable,
+  NotFoundException,
+} from "@nestjs/common";
+import { Prisma } from "@prisma/client";
 import { PrismaService } from "../prisma/prisma.service";
 import { DisponibilidadService } from "../disponibilidad/disponibilidad.service";
 import { CrearReservaDto, CrearReservaManualDto } from "./dto";
+
+// Estados que ocupan un slot (impiden reservarlo de nuevo).
+const ESTADOS_OCUPAN: Prisma.EnumEstadoReservaFilter["in"] = ["PENDIENTE", "CONFIRMADA"];
 
 @Injectable()
 export class ReservasService {
@@ -13,6 +22,25 @@ export class ReservasService {
   private depositoPorDefecto(): number {
     const pct = Number(process.env.DEFAULT_DEPOSIT_PERCENT ?? 50);
     return isNaN(pct) ? 50 : Math.min(100, Math.max(0, pct));
+  }
+
+  /**
+   * Verifica DENTRO de la transacción que el slot siga libre. Evita la condición
+   * de carrera: dos reservas simultáneas del mismo slot. Lanza 409 si ya está tomado.
+   */
+  private async asegurarSlotLibre(
+    tx: Prisma.TransactionClient,
+    canchaId: string,
+    fecha: Date,
+    horaInicio: string,
+  ) {
+    const conflicto = await tx.reserva.findFirst({
+      where: { canchaId, fecha, horaInicio, estado: { in: ESTADOS_OCUPAN } },
+      select: { id: true },
+    });
+    if (conflicto) {
+      throw new ConflictException("La franja ya fue reservada por otra persona");
+    }
   }
 
   /**
@@ -42,37 +70,44 @@ export class ReservasService {
       create: { nombre: dto.nombre, telefono: dto.telefono, email: dto.email },
     });
 
-    // 3. Crear reserva PENDIENTE (+ mesa opcional) en una transaccion
-    const reserva = await this.prisma.$transaction(async (tx) => {
-      const r = await tx.reserva.create({
-        data: {
-          canchaId: dto.canchaId,
-          clienteId: cliente.id,
-          fecha: new Date(dto.fecha + "T00:00:00"),
-          horaInicio: dto.horaInicio,
-          horaFin: dto.horaFin,
-          estado: "PENDIENTE",
-          origen: "WEB",
-          montoTotal,
-          montoAbonado: 0,
-          saldo,
-        },
-      });
-
-      if (dto.reservarMesa) {
-        await tx.reservaMesa.create({
+    // 3. Crear reserva PENDIENTE (+ mesa opcional) en una transaccion atomica.
+    //    El re-chequeo dentro de la transaccion + isolation Serializable evita
+    //    que dos reservas simultaneas tomen el mismo slot.
+    const fechaDate = new Date(dto.fecha + "T00:00:00");
+    const reserva = await this.prisma.$transaction(
+      async (tx) => {
+        await this.asegurarSlotLibre(tx, dto.canchaId, fechaDate, dto.horaInicio);
+        const r = await tx.reserva.create({
           data: {
-            reservaId: r.id,
+            canchaId: dto.canchaId,
             clienteId: cliente.id,
-            fecha: new Date(dto.fecha + "T00:00:00"),
-            hora: dto.horaFin, // mesa para el post-partido
-            personas: dto.personasMesa ?? 2,
-            estado: "SOLICITADA",
+            fecha: fechaDate,
+            horaInicio: dto.horaInicio,
+            horaFin: dto.horaFin,
+            estado: "PENDIENTE",
+            origen: "WEB",
+            montoTotal,
+            montoAbonado: 0,
+            saldo,
           },
         });
-      }
-      return r;
-    });
+
+        if (dto.reservarMesa) {
+          await tx.reservaMesa.create({
+            data: {
+              reservaId: r.id,
+              clienteId: cliente.id,
+              fecha: fechaDate,
+              hora: dto.horaFin, // mesa para el post-partido
+              personas: dto.personasMesa ?? 2,
+              estado: "SOLICITADA",
+            },
+          });
+        }
+        return r;
+      },
+      { isolationLevel: Prisma.TransactionIsolationLevel.Serializable },
+    );
 
     return {
       reservaId: reserva.id,
@@ -107,20 +142,27 @@ export class ReservasService {
       create: { nombre: dto.nombre, telefono: dto.telefono, email: dto.email },
     });
 
-    const reserva = await this.prisma.reserva.create({
-      data: {
-        canchaId: dto.canchaId,
-        clienteId: cliente.id,
-        fecha: new Date(dto.fecha + "T00:00:00"),
-        horaInicio: dto.horaInicio,
-        horaFin: dto.horaFin,
-        estado: "CONFIRMADA",
-        origen: "MANUAL",
-        montoTotal,
-        montoAbonado,
-        saldo,
+    const fechaDate = new Date(dto.fecha + "T00:00:00");
+    const reserva = await this.prisma.$transaction(
+      async (tx) => {
+        await this.asegurarSlotLibre(tx, dto.canchaId, fechaDate, dto.horaInicio);
+        return tx.reserva.create({
+          data: {
+            canchaId: dto.canchaId,
+            clienteId: cliente.id,
+            fecha: fechaDate,
+            horaInicio: dto.horaInicio,
+            horaFin: dto.horaFin,
+            estado: "CONFIRMADA",
+            origen: "MANUAL",
+            montoTotal,
+            montoAbonado,
+            saldo,
+          },
+        });
       },
-    });
+      { isolationLevel: Prisma.TransactionIsolationLevel.Serializable },
+    );
     return { reservaId: reserva.id, montoTotal, montoAbonado, saldo, estado: reserva.estado };
   }
 

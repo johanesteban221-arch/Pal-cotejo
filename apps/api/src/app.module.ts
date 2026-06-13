@@ -10,10 +10,16 @@ import { AuthModule } from "./auth/auth.module";
 import { BloqueosModule } from "./bloqueos/bloqueos.module";
 import { RecurrentesModule } from "./recurrentes/recurrentes.module";
 import { IntegracionModule } from "./integracion/integracion.module";
+import { HealthModule } from "./health/health.module";
+import { envValidationSchema } from "./config/env.validation";
 
 @Module({
   imports: [
-    ConfigModule.forRoot({ isGlobal: true }),
+    ConfigModule.forRoot({
+      isGlobal: true,
+      validationSchema: envValidationSchema,
+      validationOptions: { allowUnknown: true, abortEarly: false },
+    }),
     PrismaModule,
     AuthModule,
     CanchasModule,
@@ -24,6 +30,7 @@ import { IntegracionModule } from "./integracion/integracion.module";
     BloqueosModule,
     RecurrentesModule,
     IntegracionModule,
+    HealthModule,
   ],
 })
 export class AppModule {}

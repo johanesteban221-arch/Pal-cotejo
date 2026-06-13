@@ -25,7 +25,7 @@ services:
       npm run prisma:deploy --workspace @sportbar/db &&
       npm run prisma:seed --workspace @sportbar/db &&
       node apps/api/dist/main.js
-    healthCheckPath: /api/canchas
+    healthCheckPath: /api/health
     envVars:
       - key: DATABASE_URL
         fromDatabase:
