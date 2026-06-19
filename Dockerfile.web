@@ -1,0 +1,20 @@
+# ── Web (Next.js) para Easypanel ──
+FROM node:20-alpine AS build
+WORKDIR /app
+# La URL de la API se inyecta en build (Next.js inlinea las NEXT_PUBLIC_*)
+ARG NEXT_PUBLIC_API_URL
+ENV NEXT_PUBLIC_API_URL=$NEXT_PUBLIC_API_URL
+COPY package*.json ./
+COPY apps/web/package.json apps/web/
+COPY packages/db/package.json packages/db/
+RUN npm install
+COPY . .
+RUN npm run build --workspace @sportbar/web
+
+FROM node:20-alpine AS runtime
+WORKDIR /app
+ENV NODE_ENV=production
+COPY --from=build /app ./
+EXPOSE 3000
+# next start usa la variable PORT que asigna Easypanel
+CMD ["npm", "run", "start", "--workspace", "@sportbar/web"]

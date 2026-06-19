@@ -1,0 +1,11 @@
+node_modules
+**/node_modules
+**/dist
+**/.next
+.git
+demo-capturas
+demo-video
+kit-presentacion
+.env
+.env.*
+*.log

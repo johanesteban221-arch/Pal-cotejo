@@ -1,0 +1,22 @@
+# ── API (NestJS) para Easypanel ──
+FROM node:20-alpine AS build
+WORKDIR /app
+RUN apk add --no-cache openssl
+# Manifiestos primero (cache de dependencias)
+COPY package*.json ./
+COPY apps/api/package.json apps/api/
+COPY packages/db/package.json packages/db/
+RUN npm install
+# Código fuente
+COPY . .
+RUN npm run prisma:generate --workspace @sportbar/db \
+ && npm run build --workspace @sportbar/api
+
+FROM node:20-alpine AS runtime
+WORKDIR /app
+RUN apk add --no-cache openssl
+ENV NODE_ENV=production
+COPY --from=build /app ./
+EXPOSE 3001
+# En cada arranque: aplica migraciones + asegura datos base (idempotente) + inicia.
+CMD ["sh", "-c", "npm run prisma:deploy --workspace @sportbar/db && npm run prisma:seed-prod --workspace @sportbar/db && node apps/api/dist/main.js"]
