@@ -1,5 +1,6 @@
 import { Module } from "@nestjs/common";
 import { ConfigModule } from "@nestjs/config";
+import { ScheduleModule } from "@nestjs/schedule";
 import { PrismaModule } from "./prisma/prisma.module";
 import { CanchasModule } from "./canchas/canchas.module";
 import { DisponibilidadModule } from "./disponibilidad/disponibilidad.module";
@@ -11,6 +12,7 @@ import { BloqueosModule } from "./bloqueos/bloqueos.module";
 import { RecurrentesModule } from "./recurrentes/recurrentes.module";
 import { IntegracionModule } from "./integracion/integracion.module";
 import { HealthModule } from "./health/health.module";
+import { ClientesModule } from "./clientes/clientes.module";
 import { envValidationSchema } from "./config/env.validation";
 
 @Module({
@@ -20,6 +22,7 @@ import { envValidationSchema } from "./config/env.validation";
       validationSchema: envValidationSchema,
       validationOptions: { allowUnknown: true, abortEarly: false },
     }),
+    ScheduleModule.forRoot(),
     PrismaModule,
     AuthModule,
     CanchasModule,
@@ -31,6 +34,7 @@ import { envValidationSchema } from "./config/env.validation";
     RecurrentesModule,
     IntegracionModule,
     HealthModule,
+    ClientesModule,
   ],
 })
 export class AppModule {}

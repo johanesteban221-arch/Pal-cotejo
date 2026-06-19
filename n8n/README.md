@@ -30,6 +30,12 @@ validan con el entorno n8n-mcp y se despliegan en la instancia self-hosted.
 > `/api/integracion/*`, protegida con header `x-api-key` (variable `N8N_INTEGRATION_KEY`).
 > Reemplazar `REEMPLAZAR_API_KEY` en los nodos HTTP con esa clave.
 
+### 5. Campana WhatsApp por segmento (CRM) — ✅ ARMADO Y VALIDADO
+- **Archivo:** [`campana-whatsapp.json`](campana-whatsapp.json) (validado, 0 errores).
+- **Disparador:** Webhook `POST /webhook/campana-whatsapp` (lo llama el admin con `{ segmento, mensaje }`).
+- **Pasos:** GET `/api/integracion/clientes?segmento=...` → personalizar mensaje (`{nombre}`) → WhatsApp por cliente.
+- **Para producción:** API key real + credenciales WhatsApp (plantilla aprobada por Meta).
+
 ### 4. Gestion de cancelacion / reembolso
 - **Disparador:** Webhook desde el API al cancelar una reserva.
 - **Pasos:** segun politica (>=24 h reembolso total) → solicitar reembolso a Wompi

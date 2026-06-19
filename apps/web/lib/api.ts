@@ -111,6 +111,98 @@ export interface Tarifa {
 }
 export const getCanchaDetalle = (id: string) =>
   getJSON<Cancha & { tarifas: Tarifa[] }>(`/api/canchas/${id}`);
+
+// ── CRM Clientes ──
+export type Segmento = "NUEVO" | "REGULAR" | "FRECUENTE" | "VIP" | "DORMIDO" | "RECURRENTE";
+export interface ClienteRow {
+  id: string;
+  nombre: string;
+  telefono: string;
+  email: string | null;
+  equipo: string | null;
+  segmento: Segmento;
+  totalReservas: number;
+  totalGastado: number;
+  ultimaVisita: string | null;
+}
+export interface ClientesPage {
+  items: ClienteRow[];
+  total: number;
+  page: number;
+  limit: number;
+}
+export interface ResumenSegmentos {
+  total: number;
+  porSegmento: Partial<Record<Segmento, number>>;
+}
+export interface ClientePerfil {
+  id: string;
+  nombre: string;
+  telefono: string;
+  email: string | null;
+  equipo: string | null;
+  canchaFavorita: string | null;
+  horarioHabitual: string | null;
+  notas: string | null;
+  segmento: Segmento;
+  reservas: {
+    id: string;
+    fecha: string;
+    horaInicio: string;
+    horaFin: string;
+    estado: string;
+    montoTotal: number;
+    cancha: { nombre: string };
+  }[];
+}
+export interface ClienteStats {
+  totalGastado: number;
+  totalReservas: number;
+  ultimaVisita: string | null;
+  diasInactivo: number | null;
+}
+
+export const getClientes = (segmento?: string, buscar?: string, page = 1) => {
+  const q = new URLSearchParams();
+  if (segmento) q.set("segmento", segmento);
+  if (buscar) q.set("buscar", buscar);
+  q.set("page", String(page));
+  return getJSON<ClientesPage>(`/api/admin/clientes?${q.toString()}`);
+};
+export const getClientesResumen = () => getJSON<ResumenSegmentos>("/api/admin/clientes/resumen");
+export const getClientePerfil = (id: string) => getJSON<ClientePerfil>(`/api/admin/clientes/${id}`);
+export const getClienteStats = (id: string) => getJSON<ClienteStats>(`/api/admin/clientes/${id}/stats`);
+
+async function sendJSON<T>(path: string, method: string, body: any): Promise<T> {
+  const res = await fetch(`${API}${path}`, {
+    method,
+    headers: { "Content-Type": "application/json", ...authHeaders() },
+    body: JSON.stringify(body),
+  });
+  if (res.status === 401) throw new NoAutorizado();
+  if (!res.ok) throw new Error((await res.json().catch(() => ({}))).message || `Error en ${path}`);
+  return res.json();
+}
+export const actualizarCliente = (id: string, data: Record<string, unknown>) =>
+  sendJSON<ClientePerfil>(`/api/admin/clientes/${id}`, "PATCH", data);
+export const recalcularSegmentos = () =>
+  sendJSON<{ total: number; actualizados: number }>("/api/admin/clientes/recalcular-segmentos", "POST", {});
+export const lanzarCampana = (segmento: string, mensaje: string) =>
+  sendJSON<{ ok: boolean; destinatarios: number; motivo?: string }>("/api/admin/clientes/campana", "POST", { segmento, mensaje });
+
+/** Descarga el CSV de clientes (con auth) disparando el guardado en el navegador. */
+export async function descargarClientesCsv(segmento?: string) {
+  const q = segmento ? `?segmento=${segmento}` : "";
+  const res = await fetch(`${API}/api/admin/clientes/exportar${q}`, { headers: { ...authHeaders() } });
+  if (!res.ok) throw new Error("No se pudo exportar");
+  const blob = await res.blob();
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = segmento ? `clientes-${segmento.toLowerCase()}.csv` : "clientes-pal-cotejo.csv";
+  a.click();
+  URL.revokeObjectURL(url);
+}
 export const getResumen = () => getJSON<Resumen>("/api/reportes/resumen");
 export const getIngresosDiarios = (dias = 30) => getJSON<PuntoDiario[]>(`/api/reportes/ingresos-diarios?dias=${dias}`);
 export const getHorasRentables = () => getJSON<HoraRentable[]>("/api/reportes/horas-rentables");

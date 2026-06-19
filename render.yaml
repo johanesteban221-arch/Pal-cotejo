@@ -49,6 +49,8 @@ services:
         sync: false
       - key: N8N_WEBHOOK_RESERVA_CONFIRMADA
         sync: false
+      - key: N8N_WEBHOOK_CAMPANA
+        sync: false
 
   # ── Web (Next.js) ───────────────────────────────────────────────
   - type: web

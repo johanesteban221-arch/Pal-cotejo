@@ -28,4 +28,10 @@ export class IntegracionController {
   reporteDiario() {
     return this.integracion.reporteDiario();
   }
+
+  /** Clientes de un segmento (para campañas de WhatsApp). */
+  @Get("clientes")
+  clientes(@Query("segmento") segmento?: string) {
+    return this.integracion.clientesPorSegmento(segmento);
+  }
 }

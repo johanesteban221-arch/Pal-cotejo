@@ -59,6 +59,15 @@ export class IntegracionService {
     return { actualizadas: res.count };
   }
 
+  /** Clientes de un segmento (para campañas de WhatsApp desde n8n). */
+  async clientesPorSegmento(segmento?: string) {
+    return this.prisma.cliente.findMany({
+      where: segmento ? { segmento: segmento as any } : {},
+      select: { nombre: true, telefono: true, email: true },
+      orderBy: { nombre: "asc" },
+    });
+  }
+
   /** Resumen del día para el reporte al dueño. */
   async reporteDiario() {
     const fechaCol = this.fechaHoyColombia();

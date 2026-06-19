@@ -114,18 +114,39 @@ model Tarifa {
   @@map("tarifas")
 }
 
+/// Segmentación CRM (se recalcula a diario y al reservar).
+enum Segmento {
+  NUEVO // menos de 3 reservas
+  REGULAR // 3-7 reservas
+  FRECUENTE // 8-15 reservas
+  VIP // 16+ reservas
+  DORMIDO // sin reservas en los ultimos 30 dias
+  RECURRENTE // tiene una regla de reserva fija activa
+}
+
 model Cliente {
   id        String   @id @default(cuid())
   nombre    String
   telefono  String   @unique // requerido para WhatsApp
   email     String?
   notas     String?
-  creadoEn  DateTime @default(now())
+
+  // ── CRM ──
+  equipo          String?
+  canchaFavorita  String?
+  horarioHabitual String?
+  cumpleanos      DateTime?
+  segmento        Segmento  @default(NUEVO)
+  activo          Boolean   @default(true)
+
+  creadoEn      DateTime @default(now())
+  actualizadoEn DateTime @updatedAt
 
   reservas     Reserva[]
   recurrentes  ReservaRecurrente[]
   reservasMesa ReservaMesa[]
 
+  @@index([segmento])
   @@map("clientes")
 }
 

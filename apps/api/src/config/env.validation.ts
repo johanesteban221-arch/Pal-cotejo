@@ -21,6 +21,7 @@ export const envValidationSchema = Joi.object({
   DEFAULT_DEPOSIT_PERCENT: Joi.number().optional(),
   N8N_INTEGRATION_KEY: Joi.string().optional(),
   N8N_WEBHOOK_RESERVA_CONFIRMADA: Joi.string().uri().optional().allow(""),
+  N8N_WEBHOOK_CAMPANA: Joi.string().uri().optional().allow(""),
 
   // Pasarela de pagos: opcionales hasta que el cliente defina la pasarela (Fase 2)
   WOMPI_PUBLIC_KEY: Joi.string().optional().allow(""),

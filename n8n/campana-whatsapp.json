@@ -1,0 +1,73 @@
+{
+  "name": "PAL COTEJO - Campana WhatsApp por segmento",
+  "nodes": [
+    {
+      "id": "wh1",
+      "name": "Recibir campana",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [240, 300],
+      "parameters": { "httpMethod": "POST", "path": "campana-whatsapp", "responseMode": "onReceived", "options": {} }
+    },
+    {
+      "id": "http1",
+      "name": "Clientes del segmento",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [460, 300],
+      "parameters": {
+        "method": "GET",
+        "url": "https://pal-cotejo-api.onrender.com/api/integracion/clientes",
+        "sendQuery": true,
+        "queryParameters": { "parameters": [{ "name": "segmento", "value": "={{ $json.body.segmento }}" }] },
+        "sendHeaders": true,
+        "specifyHeaders": "keypair",
+        "headerParameters": { "parameters": [{ "name": "x-api-key", "value": "REEMPLAZAR_API_KEY" }] },
+        "options": {}
+      }
+    },
+    {
+      "id": "code1",
+      "name": "Personalizar mensaje",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [680, 300],
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "const cli = $json;\nconst mensaje = $('Recibir campana').first().json.body.mensaje || '';\nconst texto = mensaje.replace(/\\{nombre\\}/g, cli.nombre || '');\nreturn { json: { ...cli, whatsappText: texto } };"
+      }
+    },
+    {
+      "id": "wa1",
+      "name": "Enviar WhatsApp",
+      "type": "n8n-nodes-base.whatsApp",
+      "typeVersion": 1.1,
+      "position": [900, 300],
+      "parameters": {
+        "resource": "message",
+        "operation": "send",
+        "phoneNumberId": "REEMPLAZAR_PHONE_NUMBER_ID",
+        "recipientPhoneNumber": "={{ $json.telefono }}",
+        "messageType": "text",
+        "textBody": "={{ $json.whatsappText }}"
+      }
+    },
+    {
+      "id": "note1",
+      "name": "Nota",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [200, 80],
+      "parameters": {
+        "content": "## Campana WhatsApp por segmento\nEl admin de PAL COTEJO llama este webhook con { segmento, mensaje }.\nSe consultan los clientes del segmento y se envia el mensaje personalizado (usar {nombre} en el texto).\n\nPendiente: API key real y credenciales WhatsApp (plantilla para produccion).",
+        "height": 220,
+        "width": 380
+      }
+    }
+  ],
+  "connections": {
+    "Recibir campana": { "main": [[{ "node": "Clientes del segmento", "type": "main", "index": 0 }]] },
+    "Clientes del segmento": { "main": [[{ "node": "Personalizar mensaje", "type": "main", "index": 0 }]] },
+    "Personalizar mensaje": { "main": [[{ "node": "Enviar WhatsApp", "type": "main", "index": 0 }]] }
+  }
+}

@@ -7,6 +7,7 @@ import {
 import { Prisma } from "@prisma/client";
 import { PrismaService } from "../prisma/prisma.service";
 import { DisponibilidadService } from "../disponibilidad/disponibilidad.service";
+import { ClientesService } from "../clientes/clientes.service";
 import { CrearReservaDto, CrearReservaManualDto } from "./dto";
 
 // Estados que ocupan un slot (impiden reservarlo de nuevo).
@@ -17,6 +18,7 @@ export class ReservasService {
   constructor(
     private prisma: PrismaService,
     private disponibilidad: DisponibilidadService,
+    private clientes: ClientesService,
   ) {}
 
   private depositoPorDefecto(): number {
@@ -109,6 +111,9 @@ export class ReservasService {
       { isolationLevel: Prisma.TransactionIsolationLevel.Serializable },
     );
 
+    // Actualiza la segmentación CRM del cliente (no bloquea la respuesta)
+    await this.clientes.recalcularUno(cliente.id).catch(() => {});
+
     return {
       reservaId: reserva.id,
       montoTotal,
@@ -163,6 +168,7 @@ export class ReservasService {
       },
       { isolationLevel: Prisma.TransactionIsolationLevel.Serializable },
     );
+    await this.clientes.recalcularUno(cliente.id).catch(() => {});
     return { reservaId: reserva.id, montoTotal, montoAbonado, saldo, estado: reserva.estado };
   }
 
