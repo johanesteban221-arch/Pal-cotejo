@@ -145,6 +145,7 @@ model Cliente {
   reservas     Reserva[]
   recurrentes  ReservaRecurrente[]
   reservasMesa ReservaMesa[]
+  cuentas      Cuenta[]
 
   @@index([segmento])
   @@map("clientes")
@@ -182,6 +183,7 @@ model Reserva {
   recurrente  ReservaRecurrente? @relation(fields: [recurrenteId], references: [id])
   pagos       Pago[]
   reservaMesa ReservaMesa?
+  cuentas     Cuenta[]
 
   @@index([canchaId, fecha])
   @@index([estado])
@@ -295,4 +297,70 @@ model UsuarioStaff {
   creadoEn     DateTime @default(now())
 
   @@map("usuarios_staff")
+}
+
+// ── POS Sport Bar (punto de venta) ─────────────────────────────────
+
+enum CategoriaProducto {
+  BEBIDA
+  COMIDA
+  OTRO
+}
+
+enum EstadoCuenta {
+  ABIERTA // cuenta en curso, se le agregan productos
+  PAGADA // cobrada y cerrada
+  ANULADA // cancelada
+}
+
+/// Catálogo de productos del bar (bebidas, comidas).
+model Producto {
+  id        String            @id @default(cuid())
+  nombre    String
+  categoria CategoriaProducto @default(BEBIDA)
+  precio    Int // COP
+  activo    Boolean           @default(true)
+  creadoEn  DateTime          @default(now())
+
+  items ItemCuenta[]
+
+  @@index([categoria])
+  @@map("productos")
+}
+
+/// Cuenta/consumo del bar. Puede ir ligada a una reserva o cliente, o ser una venta suelta (mesa libre).
+model Cuenta {
+  id         String       @id @default(cuid())
+  mesa       String? // etiqueta libre: "Mesa 3", "Barra", o nombre del cliente walk-in
+  reservaId  String? // ligada a una reserva de cancha (opcional)
+  clienteId  String? // ligada a un cliente registrado (opcional)
+  estado     EstadoCuenta @default(ABIERTA)
+  total      Int          @default(0)
+  metodoPago String? // EFECTIVO, TARJETA, OTRO (al cobrar)
+  abiertaEn  DateTime     @default(now())
+  cerradaEn  DateTime?
+
+  reserva Reserva?     @relation(fields: [reservaId], references: [id])
+  cliente Cliente?     @relation(fields: [clienteId], references: [id])
+  items   ItemCuenta[]
+
+  @@index([estado])
+  @@index([abiertaEn])
+  @@map("cuentas")
+}
+
+/// Renglón de producto dentro de una cuenta.
+model ItemCuenta {
+  id         String @id @default(cuid())
+  cuentaId   String
+  productoId String
+  cantidad   Int    @default(1)
+  precioUnit Int // precio al momento de agregar (snapshot)
+  subtotal   Int
+
+  cuenta   Cuenta   @relation(fields: [cuentaId], references: [id], onDelete: Cascade)
+  producto Producto @relation(fields: [productoId], references: [id])
+
+  @@index([cuentaId])
+  @@map("items_cuenta")
 }

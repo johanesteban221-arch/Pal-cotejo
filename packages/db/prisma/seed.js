@@ -72,6 +72,21 @@ async function main() {
   });
   const mesas = await prisma.mesa.findMany();
 
+  // ── Catálogo de productos del bar (POS) ──
+  await prisma.producto.deleteMany();
+  await prisma.producto.createMany({
+    data: [
+      { nombre: "Cerveza nacional", categoria: "BEBIDA", precio: 5000 },
+      { nombre: "Cerveza importada", categoria: "BEBIDA", precio: 9000 },
+      { nombre: "Gaseosa", categoria: "BEBIDA", precio: 4000 },
+      { nombre: "Agua", categoria: "BEBIDA", precio: 3000 },
+      { nombre: "Aguardiente (botella)", categoria: "BEBIDA", precio: 60000 },
+      { nombre: "Picada personal", categoria: "COMIDA", precio: 18000 },
+      { nombre: "Alitas x6", categoria: "COMIDA", precio: 22000 },
+      { nombre: "Hamburguesa", categoria: "COMIDA", precio: 16000 },
+    ],
+  });
+
   // ── Clientes ──
   const clientes = [];
   for (let i = 0; i < NOMBRES.length; i++) {

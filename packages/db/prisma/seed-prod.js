@@ -38,6 +38,21 @@ async function main() {
     console.log("✔ Mesas iniciales creadas.");
   }
 
+  // ── Productos del bar (solo si no hay ninguno) ──
+  if ((await prisma.producto.count()) === 0) {
+    await prisma.producto.createMany({
+      data: [
+        { nombre: "Cerveza nacional", categoria: "BEBIDA", precio: 5000 },
+        { nombre: "Gaseosa", categoria: "BEBIDA", precio: 4000 },
+        { nombre: "Agua", categoria: "BEBIDA", precio: 3000 },
+        { nombre: "Aguardiente (botella)", categoria: "BEBIDA", precio: 60000 },
+        { nombre: "Picada personal", categoria: "COMIDA", precio: 18000 },
+        { nombre: "Alitas x6", categoria: "COMIDA", precio: 22000 },
+      ],
+    });
+    console.log("✔ Catálogo de productos de ejemplo creado (ajustar a los reales).");
+  }
+
   // ── Usuarios staff (upsert por email). Contraseñas vienen de variables de entorno. ──
   const adminEmail = process.env.ADMIN_EMAIL || "admin@palcotejo.co";
   const adminPass = process.env.ADMIN_PASSWORD || "cambiar123";

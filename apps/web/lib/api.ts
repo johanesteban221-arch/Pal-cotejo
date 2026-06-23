@@ -190,6 +190,66 @@ export const recalcularSegmentos = () =>
 export const lanzarCampana = (segmento: string, mensaje: string) =>
   sendJSON<{ ok: boolean; destinatarios: number; motivo?: string }>("/api/admin/clientes/campana", "POST", { segmento, mensaje });
 
+// ── POS Sport Bar ──
+export type CategoriaProducto = "BEBIDA" | "COMIDA" | "OTRO";
+export interface Producto {
+  id: string;
+  nombre: string;
+  categoria: CategoriaProducto;
+  precio: number;
+  activo: boolean;
+}
+export interface ItemCuenta {
+  id: string;
+  productoId: string;
+  cantidad: number;
+  precioUnit: number;
+  subtotal: number;
+  producto?: { nombre: string };
+}
+export interface Cuenta {
+  id: string;
+  mesa: string | null;
+  reservaId: string | null;
+  clienteId: string | null;
+  estado: "ABIERTA" | "PAGADA" | "ANULADA";
+  total: number;
+  metodoPago: string | null;
+  abiertaEn: string;
+  items?: ItemCuenta[];
+  cliente?: { nombre: string } | null;
+}
+export interface ReporteBar {
+  ventasHoy: number;
+  ventasSemana: number;
+  cuentasAbiertas: number;
+  cuentasHoy: number;
+  topProductos: { nombre: string; cantidad: number; ingresos: number }[];
+}
+
+export const getProductos = (todos = false) =>
+  getJSON<Producto[]>(`/api/pos/productos${todos ? "?todos=1" : ""}`);
+export const crearProducto = (data: Record<string, unknown>) =>
+  sendJSON<Producto>("/api/pos/productos", "POST", data);
+export const actualizarProducto = (id: string, data: Record<string, unknown>) =>
+  sendJSON<Producto>(`/api/pos/productos/${id}`, "PATCH", data);
+export const desactivarProducto = (id: string) =>
+  sendJSON<Producto>(`/api/pos/productos/${id}`, "DELETE", {});
+
+export const getCuentasAbiertas = () => getJSON<Cuenta[]>("/api/pos/cuentas/abiertas");
+export const getCuenta = (id: string) => getJSON<Cuenta>(`/api/pos/cuentas/${id}`);
+export const abrirCuenta = (data: Record<string, unknown>) =>
+  sendJSON<Cuenta>("/api/pos/cuentas", "POST", data);
+export const agregarItem = (cuentaId: string, productoId: string, cantidad = 1) =>
+  sendJSON<Cuenta>(`/api/pos/cuentas/${cuentaId}/items`, "POST", { productoId, cantidad });
+export const quitarItem = (itemId: string) =>
+  sendJSON<Cuenta>(`/api/pos/items/${itemId}`, "DELETE", {});
+export const cobrarCuenta = (id: string, metodoPago: string) =>
+  sendJSON<Cuenta>(`/api/pos/cuentas/${id}/cobrar`, "POST", { metodoPago });
+export const anularCuenta = (id: string) =>
+  sendJSON<Cuenta>(`/api/pos/cuentas/${id}/anular`, "POST", {});
+export const getReporteBar = () => getJSON<ReporteBar>("/api/pos/reporte");
+
 /** Descarga el CSV de clientes (con auth) disparando el guardado en el navegador. */
 export async function descargarClientesCsv(segmento?: string) {
   const q = segmento ? `?segmento=${segmento}` : "";

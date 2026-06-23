@@ -13,6 +13,7 @@ import { RecurrentesModule } from "./recurrentes/recurrentes.module";
 import { IntegracionModule } from "./integracion/integracion.module";
 import { HealthModule } from "./health/health.module";
 import { ClientesModule } from "./clientes/clientes.module";
+import { PosModule } from "./pos/pos.module";
 import { envValidationSchema } from "./config/env.validation";
 
 @Module({
@@ -35,6 +36,7 @@ import { envValidationSchema } from "./config/env.validation";
     IntegracionModule,
     HealthModule,
     ClientesModule,
+    PosModule,
   ],
 })
 export class AppModule {}
