@@ -11,6 +11,9 @@ import {
   formatoCOP,
 } from "../../../lib/api";
 
+// Mientras no esté la pasarela (Fase 2): "pago en sitio". Cambiar a "true" cuando Wompi esté listo.
+const PAGOS_ONLINE = process.env.NEXT_PUBLIC_PAGOS_ONLINE === "true";
+
 const MESES = [
   "Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio",
   "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre",
@@ -112,7 +115,7 @@ export default function Reservar() {
         horaFin: slot.horaFin,
         nombre,
         telefono,
-        pagarAbono: abono,
+        pagarAbono: PAGOS_ONLINE ? abono : false,
         reservarMesa: mesa,
         personasMesa: personas,
       });
@@ -331,17 +334,25 @@ export default function Reservar() {
                   <span className="pago-val">{formatoCOP(total)}</span>
                 </div>
 
-                <div className="abono-toggle">
-                  <button className={`abono-btn ${abono ? "active" : ""}`} onClick={() => setAbono(true)}>
-                    Abonar 50% — {formatoCOP(Math.round(total / 2))}
-                  </button>
-                  <button className={`abono-btn ${!abono ? "active" : ""}`} onClick={() => setAbono(false)}>
-                    Pago total — {formatoCOP(total)}
-                  </button>
-                </div>
-                <div style={{ marginTop: 4, color: "var(--muted)", fontSize: 12, marginBottom: 16 }}>
-                  El saldo se cancela en caja antes del partido.
-                </div>
+                {PAGOS_ONLINE ? (
+                  <>
+                    <div className="abono-toggle">
+                      <button className={`abono-btn ${abono ? "active" : ""}`} onClick={() => setAbono(true)}>
+                        Abonar 50% — {formatoCOP(Math.round(total / 2))}
+                      </button>
+                      <button className={`abono-btn ${!abono ? "active" : ""}`} onClick={() => setAbono(false)}>
+                        Pago total — {formatoCOP(total)}
+                      </button>
+                    </div>
+                    <div style={{ marginTop: 4, color: "var(--muted)", fontSize: 12, marginBottom: 16 }}>
+                      El saldo se cancela en caja antes del partido.
+                    </div>
+                  </>
+                ) : (
+                  <div style={{ margin: "12px 0 16px", color: "var(--muted)", fontSize: 13 }}>
+                    💵 El pago se realiza <b>en caja</b> al llegar. Presenta tu código de reserva.
+                  </div>
+                )}
 
                 <div className="form-group">
                   <div className="form-label">Nombre completo</div>
@@ -380,10 +391,10 @@ export default function Reservar() {
                   disabled={!nombre || !telefono || enviando}
                   onClick={confirmar}
                 >
-                  {enviando ? "Procesando…" : `Confirmar y pagar ${formatoCOP(aPagar)}`}
+                  {enviando ? "Procesando…" : PAGOS_ONLINE ? `Confirmar y pagar ${formatoCOP(aPagar)}` : "Confirmar reserva"}
                 </button>
                 <div style={{ textAlign: "center", marginTop: 10, color: "var(--muted)", fontSize: 12 }}>
-                  Pago seguro con Wompi · Tarjeta · PSE · Nequi
+                  {PAGOS_ONLINE ? "Pago seguro con Wompi · Tarjeta · PSE · Nequi" : "Apartas tu cancha ahora · pagas en caja al llegar 🏟️"}
                 </div>
               </div>
               <div style={{ marginTop: 16 }}>

@@ -4,12 +4,15 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { formatoCOP } from "../../../lib/api";
 
+const PAGOS_ONLINE = process.env.NEXT_PUBLIC_PAGOS_ONLINE === "true";
+
 interface ReservaConf {
   reservaId: string;
   cancha: string;
   fechaTexto: string;
   horaInicio: string;
   horaFin: string;
+  montoTotal: number;
   montoAPagar: number;
   saldoEnCaja: number;
   nombre: string;
@@ -49,7 +52,9 @@ export default function Confirmacion() {
           <div className="confirm-icon">✅</div>
           <div className="confirm-title">¡Reserva confirmada!</div>
           <div className="confirm-sub">
-            Te enviaremos la confirmación por WhatsApp. Recuerda el recordatorio 3 horas antes.
+            {PAGOS_ONLINE
+              ? "Te enviaremos la confirmación por WhatsApp. Recuerda el recordatorio 3 horas antes."
+              : "Tu cancha quedó apartada. Presenta tu código en caja para pagar y jugar."}
           </div>
           <div className="confirm-details">
             <div className="confirm-row">
@@ -80,22 +85,31 @@ export default function Confirmacion() {
                 </span>
               </div>
             )}
-            <div className="confirm-row">
-              <span className="confirm-key">Abono pagado</span>
-              <span className="confirm-value" style={{ color: "#4CAF50" }}>
-                {formatoCOP(r.montoAPagar)}
-              </span>
-            </div>
-            {r.saldoEnCaja > 0 && (
+            {PAGOS_ONLINE ? (
+              <>
+                <div className="confirm-row">
+                  <span className="confirm-key">Abono pagado</span>
+                  <span className="confirm-value" style={{ color: "#4CAF50" }}>{formatoCOP(r.montoAPagar)}</span>
+                </div>
+                {r.saldoEnCaja > 0 && (
+                  <div className="confirm-row">
+                    <span className="confirm-key">Saldo en caja</span>
+                    <span className="confirm-value">{formatoCOP(r.saldoEnCaja)}</span>
+                  </div>
+                )}
+              </>
+            ) : (
               <div className="confirm-row">
-                <span className="confirm-key">Saldo en caja</span>
-                <span className="confirm-value">{formatoCOP(r.saldoEnCaja)}</span>
+                <span className="confirm-key">Total a pagar en caja</span>
+                <span className="confirm-value" style={{ color: "var(--gold)" }}>{formatoCOP(r.montoTotal)}</span>
               </div>
             )}
           </div>
-          <a className="whatsapp-btn" href="#">
-            💬 Abrir confirmación en WhatsApp
-          </a>
+          {PAGOS_ONLINE && (
+            <a className="whatsapp-btn" href="#">
+              💬 Abrir confirmación en WhatsApp
+            </a>
+          )}
           <Link className="btn-outline" style={{ width: "100%", marginTop: 10, fontSize: 14, display: "inline-block", textAlign: "center" }} href="/">
             Volver al inicio
           </Link>
