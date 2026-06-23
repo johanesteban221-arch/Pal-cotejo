@@ -27,6 +27,10 @@ export default function BarPOS() {
   const [sel, setSel] = useState<Cuenta | null>(null);
   const [nuevaMesa, setNuevaMesa] = useState("");
   const [msg, setMsg] = useState("");
+  const [recibo, setRecibo] = useState<{
+    mesa: string | null; total: number; metodo: string; codigo: string; fecha: string;
+    items: { nombre: string; cantidad: number; subtotal: number }[];
+  } | null>(null);
 
   const onErr = (e: unknown) => {
     if (e instanceof NoAutorizado) {
@@ -70,7 +74,17 @@ export default function BarPOS() {
   }
   function cobrar(metodo: string) {
     if (!sel) return;
-    cobrarCuenta(sel.id, metodo).then(() => { aviso(`✓ Cobrado ${formatoCOP(sel.total)} (${metodo})`); setSel(null); recargar(); }).catch(onErr);
+    const datos = {
+      mesa: sel.mesa,
+      total: sel.total,
+      metodo,
+      codigo: sel.id.slice(-6).toUpperCase(),
+      fecha: new Date().toLocaleString("es-CO", { dateStyle: "short", timeStyle: "short" }),
+      items: (sel.items || []).map((i) => ({ nombre: i.producto?.nombre || "Producto", cantidad: i.cantidad, subtotal: i.subtotal })),
+    };
+    cobrarCuenta(sel.id, metodo)
+      .then(() => { setRecibo(datos); aviso(`✓ Cobrado ${formatoCOP(datos.total)} (${metodo})`); setSel(null); recargar(); })
+      .catch(onErr);
   }
   function anular() {
     if (!sel) return;
@@ -191,6 +205,44 @@ export default function BarPOS() {
           </table>
         </div>
       )}
+
+      {recibo && <ReciboModal r={recibo} onClose={() => setRecibo(null)} />}
     </>
+  );
+}
+
+function ReciboModal({
+  r, onClose,
+}: {
+  r: { mesa: string | null; total: number; metodo: string; codigo: string; fecha: string; items: { nombre: string; cantidad: number; subtotal: number }[] };
+  onClose: () => void;
+}) {
+  return (
+    <div onClick={onClose} style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,.6)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 300, padding: 20 }}>
+      <div onClick={(e) => e.stopPropagation()} style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 12 }}>
+        <div id="recibo-print" className="recibo">
+          <h3>PAL COTEJO</h3>
+          <div className="rsub">Sport Bar · Recibo de venta</div>
+          <div className="rrow"><span>Recibo</span><span>#{r.codigo}</span></div>
+          <div className="rrow"><span>Fecha</span><span>{r.fecha}</span></div>
+          {r.mesa && <div className="rrow"><span>Mesa</span><span>{r.mesa}</span></div>}
+          <div className="rline" />
+          {r.items.map((i, idx) => (
+            <div className="rrow" key={idx}>
+              <span>{i.cantidad}× {i.nombre}</span>
+              <span>{formatoCOP(i.subtotal)}</span>
+            </div>
+          ))}
+          <div className="rline" />
+          <div className="rrow rtotal"><span>TOTAL</span><span>{formatoCOP(r.total)}</span></div>
+          <div className="rrow"><span>Pago</span><span>{r.metodo}</span></div>
+          <div className="rfoot">¡Gracias por su visita! ⚽</div>
+        </div>
+        <div style={{ display: "flex", gap: 10 }}>
+          <button className="btn-gold" onClick={() => window.print()}>🖨️ Imprimir</button>
+          <button className="btn-outline" onClick={onClose}>Cerrar</button>
+        </div>
+      </div>
+    </div>
   );
 }

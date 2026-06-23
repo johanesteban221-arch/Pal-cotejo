@@ -5,13 +5,21 @@ export class CrearProductoDto {
   @IsString() nombre!: string;
   @IsEnum(CategoriaProducto) categoria!: CategoriaProducto;
   @IsInt() @Min(0) precio!: number;
+  @IsOptional() @IsInt() @Min(0) stock?: number;
+  @IsOptional() @IsInt() @Min(0) stockMinimo?: number;
 }
 
 export class ActualizarProductoDto {
   @IsOptional() @IsString() nombre?: string;
   @IsOptional() @IsEnum(CategoriaProducto) categoria?: CategoriaProducto;
   @IsOptional() @IsInt() @Min(0) precio?: number;
+  @IsOptional() @IsInt() @Min(0) stockMinimo?: number;
   @IsOptional() activo?: boolean;
+}
+
+export class EntradaInventarioDto {
+  @IsInt() @Min(1) cantidad!: number;
+  @IsOptional() @IsString() motivo?: string;
 }
 
 export class AbrirCuentaDto {

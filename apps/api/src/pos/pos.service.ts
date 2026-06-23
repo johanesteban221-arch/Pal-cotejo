@@ -114,10 +114,43 @@ export class PosService {
     if (!cuenta) throw new NotFoundException("Cuenta no encontrada");
     if (cuenta.estado !== "ABIERTA") throw new BadRequestException("La cuenta ya fue cerrada");
     if (cuenta.items.length === 0) throw new BadRequestException("La cuenta no tiene productos");
-    return this.prisma.cuenta.update({
-      where: { id },
-      data: { estado: "PAGADA", metodoPago, cerradaEn: new Date() },
+
+    // Cobrar + descontar inventario (venta) en una sola transacción.
+    return this.prisma.$transaction(async (tx) => {
+      const pagada = await tx.cuenta.update({
+        where: { id },
+        data: { estado: "PAGADA", metodoPago, cerradaEn: new Date() },
+      });
+      for (const it of cuenta.items) {
+        await tx.producto.update({
+          where: { id: it.productoId },
+          data: { stock: { decrement: it.cantidad } },
+        });
+        await tx.movimientoInventario.create({
+          data: { productoId: it.productoId, tipo: "SALIDA", cantidad: it.cantidad, motivo: `Venta cuenta ${id.slice(-6)}` },
+        });
+      }
+      return pagada;
     });
+  }
+
+  /** Registra una entrada de inventario (compra/reposición). */
+  async entradaInventario(productoId: string, cantidad: number, motivo?: string) {
+    const producto = await this.prisma.producto.findUnique({ where: { id: productoId } });
+    if (!producto) throw new NotFoundException("Producto no encontrado");
+    const [actualizado] = await this.prisma.$transaction([
+      this.prisma.producto.update({ where: { id: productoId }, data: { stock: { increment: cantidad } } }),
+      this.prisma.movimientoInventario.create({
+        data: { productoId, tipo: "ENTRADA", cantidad, motivo: motivo || "Entrada de inventario" },
+      }),
+    ]);
+    return actualizado;
+  }
+
+  /** Productos activos con stock en o por debajo del mínimo. */
+  async productosBajoStock() {
+    const productos = await this.prisma.producto.findMany({ where: { activo: true } });
+    return productos.filter((p) => p.stock <= p.stockMinimo);
   }
 
   async anular(id: string) {

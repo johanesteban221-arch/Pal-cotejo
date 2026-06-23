@@ -313,19 +313,43 @@ enum EstadoCuenta {
   ANULADA // cancelada
 }
 
+enum TipoMovimiento {
+  ENTRADA // compra/reposición
+  SALIDA // venta
+  AJUSTE // corrección manual
+}
+
 /// Catálogo de productos del bar (bebidas, comidas).
 model Producto {
-  id        String            @id @default(cuid())
-  nombre    String
-  categoria CategoriaProducto @default(BEBIDA)
-  precio    Int // COP
-  activo    Boolean           @default(true)
-  creadoEn  DateTime          @default(now())
+  id          String            @id @default(cuid())
+  nombre      String
+  categoria   CategoriaProducto @default(BEBIDA)
+  precio      Int // COP
+  stock       Int               @default(0) // unidades disponibles
+  stockMinimo Int               @default(0) // umbral para alerta de stock bajo
+  activo      Boolean           @default(true)
+  creadoEn    DateTime          @default(now())
 
-  items ItemCuenta[]
+  items       ItemCuenta[]
+  movimientos MovimientoInventario[]
 
   @@index([categoria])
   @@map("productos")
+}
+
+/// Historial de movimientos de inventario (entradas, ventas, ajustes).
+model MovimientoInventario {
+  id         String         @id @default(cuid())
+  productoId String
+  tipo       TipoMovimiento
+  cantidad   Int // positivo
+  motivo     String?
+  creadoEn   DateTime       @default(now())
+
+  producto Producto @relation(fields: [productoId], references: [id], onDelete: Cascade)
+
+  @@index([productoId])
+  @@map("movimientos_inventario")
 }
 
 /// Cuenta/consumo del bar. Puede ir ligada a una reserva o cliente, o ser una venta suelta (mesa libre).

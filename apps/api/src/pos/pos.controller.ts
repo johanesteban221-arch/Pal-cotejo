@@ -1,6 +1,6 @@
 import { Body, Controller, Delete, Get, Param, Patch, Post, Query, UseGuards } from "@nestjs/common";
 import { PosService } from "./pos.service";
-import { AbrirCuentaDto, ActualizarProductoDto, AgregarItemDto, CobrarDto, CrearProductoDto } from "./dto";
+import { AbrirCuentaDto, ActualizarProductoDto, AgregarItemDto, CobrarDto, CrearProductoDto, EntradaInventarioDto } from "./dto";
 import { JwtAuthGuard } from "../auth/jwt-auth.guard";
 import { RolesGuard } from "../auth/roles.guard";
 import { Roles } from "../auth/roles.decorator";
@@ -33,6 +33,17 @@ export class PosController {
   @Delete("productos/:id")
   desactivarProducto(@Param("id") id: string) {
     return this.pos.desactivarProducto(id);
+  }
+
+  @Roles("ADMIN")
+  @Post("productos/:id/entrada")
+  entrada(@Param("id") id: string, @Body() dto: EntradaInventarioDto) {
+    return this.pos.entradaInventario(id, dto.cantidad, dto.motivo);
+  }
+
+  @Get("stock-bajo")
+  stockBajo() {
+    return this.pos.productosBajoStock();
   }
 
   // ── Cuentas ──

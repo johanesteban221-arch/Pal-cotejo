@@ -30,6 +30,7 @@ const NOMBRES = [
 
 async function main() {
   console.log("Limpiando datos previos…");
+  await prisma.cuenta.deleteMany(); // cascada borra items_cuenta (libera FK a productos)
   await prisma.reservaMesa.deleteMany();
   await prisma.pago.deleteMany();
   await prisma.reserva.deleteMany();
@@ -76,14 +77,14 @@ async function main() {
   await prisma.producto.deleteMany();
   await prisma.producto.createMany({
     data: [
-      { nombre: "Cerveza nacional", categoria: "BEBIDA", precio: 5000 },
-      { nombre: "Cerveza importada", categoria: "BEBIDA", precio: 9000 },
-      { nombre: "Gaseosa", categoria: "BEBIDA", precio: 4000 },
-      { nombre: "Agua", categoria: "BEBIDA", precio: 3000 },
-      { nombre: "Aguardiente (botella)", categoria: "BEBIDA", precio: 60000 },
-      { nombre: "Picada personal", categoria: "COMIDA", precio: 18000 },
-      { nombre: "Alitas x6", categoria: "COMIDA", precio: 22000 },
-      { nombre: "Hamburguesa", categoria: "COMIDA", precio: 16000 },
+      { nombre: "Cerveza nacional", categoria: "BEBIDA", precio: 5000, stock: 80, stockMinimo: 24 },
+      { nombre: "Cerveza importada", categoria: "BEBIDA", precio: 9000, stock: 40, stockMinimo: 12 },
+      { nombre: "Gaseosa", categoria: "BEBIDA", precio: 4000, stock: 60, stockMinimo: 12 },
+      { nombre: "Agua", categoria: "BEBIDA", precio: 3000, stock: 50, stockMinimo: 12 },
+      { nombre: "Aguardiente (botella)", categoria: "BEBIDA", precio: 60000, stock: 8, stockMinimo: 3 },
+      { nombre: "Picada personal", categoria: "COMIDA", precio: 18000, stock: 25, stockMinimo: 5 },
+      { nombre: "Alitas x6", categoria: "COMIDA", precio: 22000, stock: 20, stockMinimo: 5 },
+      { nombre: "Hamburguesa", categoria: "COMIDA", precio: 16000, stock: 15, stockMinimo: 5 },
     ],
   });
 

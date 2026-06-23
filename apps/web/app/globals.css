@@ -285,6 +285,24 @@ footer { background: var(--bg3); border-top: 1px solid var(--border); padding: 4
 .err { color: var(--red-lt); }
 
 /* ══ RESPONSIVE ══ */
+/* ══ Recibo / ticket imprimible ══ */
+.recibo {
+  background: #fff; color: #111; width: 300px; max-width: 92vw; border-radius: 10px;
+  padding: 20px; font-family: "Courier New", monospace; font-size: 13px;
+}
+.recibo h3 { text-align: center; font-family: "Oswald", sans-serif; font-size: 20px; letter-spacing: 1px; }
+.recibo .rsub { text-align: center; color: #555; font-size: 11px; margin-bottom: 10px; }
+.recibo .rrow { display: flex; justify-content: space-between; padding: 2px 0; }
+.recibo .rline { border-top: 1px dashed #999; margin: 8px 0; }
+.recibo .rtotal { font-weight: 700; font-size: 16px; }
+.recibo .rfoot { text-align: center; color: #555; font-size: 11px; margin-top: 10px; }
+
+@media print {
+  body * { visibility: hidden; }
+  #recibo-print, #recibo-print * { visibility: visible; }
+  #recibo-print { position: absolute; top: 0; left: 0; box-shadow: none; }
+}
+
 @media (max-width: 768px) {
   nav { padding: 0 16px; }
   .nav-links { display: none; }

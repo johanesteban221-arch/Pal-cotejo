@@ -197,6 +197,8 @@ export interface Producto {
   nombre: string;
   categoria: CategoriaProducto;
   precio: number;
+  stock: number;
+  stockMinimo: number;
   activo: boolean;
 }
 export interface ItemCuenta {
@@ -235,6 +237,9 @@ export const actualizarProducto = (id: string, data: Record<string, unknown>) =>
   sendJSON<Producto>(`/api/pos/productos/${id}`, "PATCH", data);
 export const desactivarProducto = (id: string) =>
   sendJSON<Producto>(`/api/pos/productos/${id}`, "DELETE", {});
+export const entradaInventario = (id: string, cantidad: number, motivo?: string) =>
+  sendJSON<Producto>(`/api/pos/productos/${id}/entrada`, "POST", { cantidad, motivo });
+export const getStockBajo = () => getJSON<Producto[]>("/api/pos/stock-bajo");
 
 export const getCuentasAbiertas = () => getJSON<Cuenta[]>("/api/pos/cuentas/abiertas");
 export const getCuenta = (id: string) => getJSON<Cuenta>(`/api/pos/cuentas/${id}`);

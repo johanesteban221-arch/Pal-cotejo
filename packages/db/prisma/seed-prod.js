@@ -42,12 +42,12 @@ async function main() {
   if ((await prisma.producto.count()) === 0) {
     await prisma.producto.createMany({
       data: [
-        { nombre: "Cerveza nacional", categoria: "BEBIDA", precio: 5000 },
-        { nombre: "Gaseosa", categoria: "BEBIDA", precio: 4000 },
-        { nombre: "Agua", categoria: "BEBIDA", precio: 3000 },
-        { nombre: "Aguardiente (botella)", categoria: "BEBIDA", precio: 60000 },
-        { nombre: "Picada personal", categoria: "COMIDA", precio: 18000 },
-        { nombre: "Alitas x6", categoria: "COMIDA", precio: 22000 },
+        { nombre: "Cerveza nacional", categoria: "BEBIDA", precio: 5000, stockMinimo: 24 },
+        { nombre: "Gaseosa", categoria: "BEBIDA", precio: 4000, stockMinimo: 12 },
+        { nombre: "Agua", categoria: "BEBIDA", precio: 3000, stockMinimo: 12 },
+        { nombre: "Aguardiente (botella)", categoria: "BEBIDA", precio: 60000, stockMinimo: 3 },
+        { nombre: "Picada personal", categoria: "COMIDA", precio: 18000, stockMinimo: 5 },
+        { nombre: "Alitas x6", categoria: "COMIDA", precio: 22000, stockMinimo: 5 },
       ],
     });
     console.log("✔ Catálogo de productos de ejemplo creado (ajustar a los reales).");
