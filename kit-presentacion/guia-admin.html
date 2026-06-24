@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<title>Guía del administrador — PAL COTEJO</title>
+<style>
+  :root { --dark:#0A1A0A; --green:#1A7A2E; --gold:#D4A017; --rojo:#C0392B; }
+  * { box-sizing:border-box; margin:0; padding:0; }
+  body { font-family:"Segoe UI",Roboto,system-ui,sans-serif; color:#16201a; background:#fff; }
+  .head { background:linear-gradient(135deg,var(--dark),var(--green)); color:#fff; padding:20px 32px; }
+  .head .logo { font-size:28px; font-weight:800; color:var(--gold); letter-spacing:1px; }
+  .head h1 { font-size:21px; margin-top:2px; }
+  .head p { color:#cdebcf; font-size:13px; margin-top:5px; }
+  .page { padding:22px 30px; }
+  .grid { display:grid; grid-template-columns:1fr 1fr; gap:14px; }
+  .card { border:1px solid #cfe0d2; border-radius:12px; overflow:hidden; }
+  .card .title { background:#eef5ef; padding:9px 14px; font-size:15px; font-weight:800; color:var(--green); display:flex; align-items:center; gap:8px; }
+  .card .title .n { width:22px; height:22px; border-radius:50%; background:var(--green); color:#fff; font-size:13px; display:inline-flex; align-items:center; justify-content:center; }
+  .card .body { padding:11px 14px; font-size:13px; line-height:1.5; color:#2a352d; }
+  .card .body b { color:var(--dark); }
+  .pill { display:inline-block; background:var(--gold); color:#3a2a00; font-weight:700; font-size:11px; padding:1px 8px; border-radius:10px; }
+  .tip { background:#fffaf0; border-left:4px solid var(--gold); font-size:12px; padding:8px 12px; border-radius:0 8px 8px 0; margin-top:8px; color:#4a4030; }
+  .reglas { margin-top:14px; border:2px solid var(--rojo); border-radius:12px; padding:12px 18px; background:#fdf3f2; }
+  .reglas h2 { color:var(--rojo); font-size:16px; margin-bottom:6px; }
+  .reglas ol { margin-left:20px; }
+  .reglas li { font-size:13px; margin-bottom:5px; }
+  .foot { margin-top:12px; text-align:center; font-size:11px; color:#778; }
+  @page { size:A4; margin:0; }
+</style>
+</head>
+<body>
+<div class="head">
+  <div class="logo">PAL COTEJO</div>
+  <h1>👑 Guía del administrador / dueño</h1>
+  <p>Tu cuenta de <b>admin</b> ve todo. Entra con <b>admin@palcotejo.co</b>. (La caja no ve Productos, Tarifas ni Bloqueos.)</p>
+</div>
+<div class="page">
+  <div class="grid">
+
+    <div class="card">
+      <div class="title"><span class="n">1</span>📊 Dashboard — cómo va el negocio</div>
+      <div class="body">Ingresos de <b>hoy</b> y de la semana, reservas, ticket promedio, ocupación, <b>horas más rentables</b> y reservas del día. Para <b>tomar decisiones</b> (qué horas reforzar, etc.).</div>
+    </div>
+
+    <div class="card">
+      <div class="title"><span class="n">2</span>🍔 Productos e inventario <span class="pill">solo tú</span></div>
+      <div class="body">
+        <b>Agregar:</b> nombre, categoría, precio, stock, mínimo → Agregar.<br>
+        <b>Cargar lo que llega:</b> botón <b>➕ Entrada</b>.<br>
+        <b>Cambiar precio/mínimo:</b> escribe y haz clic afuera.<br>
+        <b>Stock rojo</b> = reabastecer. <b>Off</b>=ocultar · <b>🗑</b>=borrar (sin ventas).
+        <div class="tip">🍺 Las cervezas <b>1/2 petaco (15), petaco (30), six (6)</b> comparten el stock de la base. <b>Solo cargas la base</b>; al vender un petaco baja 30 solo.</div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="title"><span class="n">3</span>🍺 Sport bar — ventas del bar</div>
+      <div class="body">Ves <b>ventas de hoy y de la semana</b> y los <b>productos más vendidos</b>. También puedes vender desde aquí, igual que la caja.</div>
+    </div>
+
+    <div class="card">
+      <div class="title"><span class="n">4</span>👥 Clientes (CRM)</div>
+      <div class="body">Filtra por <b>segmento</b> (VIP, Frecuente, <b>Dormido</b>…). Clic en un cliente → su historial. <b>Exportar CSV</b> (Excel) para tu base de datos.</div>
+    </div>
+
+    <div class="card" style="grid-column:1/-1;">
+      <div class="title"><span class="n">5</span>⚽ Canchas y reservas</div>
+      <div class="body">
+        <b>Reservas:</b> ver todas, filtrar por día o <b>crear reserva manual</b>. &nbsp;·&nbsp;
+        <b>Bloqueos</b> <span class="pill">solo tú</span>: bloquear cancha (mantenimiento/torneo) y registrar <b>clientes fijos</b> (recurrentes). &nbsp;·&nbsp;
+        <b>Tarifas</b> <span class="pill">solo tú</span>: ver precios pico/valle.
+      </div>
+    </div>
+
+  </div>
+
+  <div class="reglas">
+    <h2>🔐 Reglas importantes</h2>
+    <ol>
+      <li><b>No le des tu clave de admin a la caja.</b> La caja usa su propia cuenta (rol CAJA).</li>
+      <li><b>Al inicio, carga el inventario real</b> con <b>➕ Entrada</b> en cada producto base.</li>
+      <li>Cada actualización del sistema <b>NO borra</b> tus datos (reservas, clientes, ventas, stock).</li>
+    </ol>
+  </div>
+
+  <div class="foot">PAL COTEJO · Soporte: Solucionez — infra@solucionez.com</div>
+</div>
+</body>
+</html>
