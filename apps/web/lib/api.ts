@@ -197,8 +197,11 @@ export interface Producto {
   nombre: string;
   categoria: CategoriaProducto;
   precio: number;
+  unidades: number;
   stock: number;
   stockMinimo: number;
+  stockBaseId: string | null;
+  stockBase?: { nombre: string } | null;
   activo: boolean;
 }
 export interface ItemCuenta {
@@ -239,6 +242,8 @@ export const desactivarProducto = (id: string) =>
   sendJSON<Producto>(`/api/pos/productos/${id}`, "DELETE", {});
 export const entradaInventario = (id: string, cantidad: number, motivo?: string) =>
   sendJSON<Producto>(`/api/pos/productos/${id}/entrada`, "POST", { cantidad, motivo });
+export const eliminarProducto = (id: string) =>
+  sendJSON<{ ok: boolean }>(`/api/pos/productos/${id}/permanente`, "DELETE", {});
 export const getStockBajo = () => getJSON<Producto[]>("/api/pos/stock-bajo");
 
 export const getCuentasAbiertas = () => getJSON<Cuenta[]>("/api/pos/cuentas/abiertas");

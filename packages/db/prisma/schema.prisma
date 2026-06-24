@@ -320,18 +320,24 @@ enum TipoMovimiento {
 }
 
 /// Catálogo de productos del bar (bebidas, comidas).
+/// Presentaciones (1/2 petaco, petaco, six) son productos con `unidades` > 1 que
+/// comparten el stock de un producto base (`stockBaseId`) medido en unidades.
 model Producto {
   id          String            @id @default(cuid())
   nombre      String
   categoria   CategoriaProducto @default(BEBIDA)
   precio      Int // COP
-  stock       Int               @default(0) // unidades disponibles
+  unidades    Int               @default(1) // unidades de stock que descuenta una venta (unidad=1, 1/2 petaco=15, petaco=30, six=6)
+  stock       Int               @default(0) // unidades disponibles (solo en el producto base)
   stockMinimo Int               @default(0) // umbral para alerta de stock bajo
+  stockBaseId String? // si es presentación: producto base que lleva el stock
   activo      Boolean           @default(true)
   creadoEn    DateTime          @default(now())
 
-  items       ItemCuenta[]
-  movimientos MovimientoInventario[]
+  stockBase      Producto?  @relation("Presentaciones", fields: [stockBaseId], references: [id])
+  presentaciones Producto[] @relation("Presentaciones")
+  items          ItemCuenta[]
+  movimientos    MovimientoInventario[]
 
   @@index([categoria])
   @@map("productos")

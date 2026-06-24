@@ -9,6 +9,7 @@ import {
   actualizarProducto,
   desactivarProducto,
   entradaInventario,
+  eliminarProducto,
   formatoCOP,
 } from "../../../lib/api";
 import { NoAutorizado, logout } from "../../../lib/auth";
@@ -92,28 +93,41 @@ export default function ProductosAdmin() {
           <thead><tr><th>Producto</th><th>Cat.</th><th>Precio</th><th>Stock</th><th>Mín.</th><th>Estado</th><th></th></tr></thead>
           <tbody>
             {productos.map((p) => {
+              const esPresentacion = !!p.stockBaseId;
               const bajo = p.stock <= p.stockMinimo;
               return (
                 <tr key={p.id} style={{ opacity: p.activo ? 1 : 0.5 }}>
-                  <td>{p.nombre}</td>
+                  <td>
+                    {esPresentacion ? <span style={{ color: "var(--muted)" }}>↳ </span> : null}
+                    {p.nombre}
+                    {esPresentacion && <span className="status-pill pill-gray" style={{ marginLeft: 6, fontSize: 10 }}>×{p.unidades} u</span>}
+                  </td>
                   <td><span className="status-pill pill-gray">{p.categoria}</span></td>
                   <td>
                     <input className="form-input" type="number" defaultValue={p.precio} style={{ width: 100, padding: "6px 10px" }}
                       onBlur={(e) => { const v = Number(e.target.value); if (v !== p.precio) actualizarProducto(p.id, { precio: v }).then(() => aviso("✓ Precio actualizado")).catch(onErr); }} />
                   </td>
                   <td>
-                    <span className={`status-pill ${bajo ? "pill-red" : "pill-green"}`}>{p.stock}</span>
+                    {esPresentacion
+                      ? <span className="muted" style={{ fontSize: 12 }}>usa stock de {p.stockBase?.nombre}</span>
+                      : <span className={`status-pill ${bajo ? "pill-red" : "pill-green"}`}>{p.stock}</span>}
                   </td>
                   <td>
-                    <input className="form-input" type="number" defaultValue={p.stockMinimo} style={{ width: 70, padding: "6px 10px" }}
-                      onBlur={(e) => { const v = Number(e.target.value); if (v !== p.stockMinimo) actualizarProducto(p.id, { stockMinimo: v }).then(() => aviso("✓ Mínimo actualizado")).catch(onErr); }} />
+                    {esPresentacion ? <span className="muted">—</span> : (
+                      <input className="form-input" type="number" defaultValue={p.stockMinimo} style={{ width: 70, padding: "6px 10px" }}
+                        onBlur={(e) => { const v = Number(e.target.value); if (v !== p.stockMinimo) actualizarProducto(p.id, { stockMinimo: v }).then(() => aviso("✓ Mínimo actualizado")).catch(onErr); }} />
+                    )}
                   </td>
                   <td>{p.activo ? <span className="status-pill pill-green">Activo</span> : <span className="status-pill pill-red">Inactivo</span>}</td>
-                  <td style={{ display: "flex", gap: 6 }}>
-                    <button className="btn-gold" style={{ fontSize: 12, padding: "4px 10px" }} onClick={() => entrada(p)}>+ Entrada</button>
+                  <td style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
+                    {!esPresentacion && <button className="btn-gold" style={{ fontSize: 12, padding: "4px 10px" }} onClick={() => entrada(p)}>+ Entrada</button>}
                     {p.activo
                       ? <button className="btn-outline" style={{ fontSize: 12, padding: "4px 10px", color: "var(--red-lt)", borderColor: "rgba(192,57,43,.4)" }} onClick={() => desactivarProducto(p.id).then(() => { aviso("Desactivado"); cargar(); }).catch(onErr)}>Off</button>
                       : <button className="btn-outline" style={{ fontSize: 12, padding: "4px 10px" }} onClick={() => actualizarProducto(p.id, { activo: true }).then(() => { aviso("✓ Reactivado"); cargar(); }).catch(onErr)}>On</button>}
+                    <button className="btn-outline" style={{ fontSize: 12, padding: "4px 10px", color: "var(--red-lt)", borderColor: "rgba(192,57,43,.4)" }}
+                      onClick={() => { if (confirm(`¿Eliminar "${p.nombre}" del todo? (solo si no tiene ventas)`)) eliminarProducto(p.id).then(() => { aviso("✓ Eliminado"); cargar(); }).catch(onErr); }}>
+                      🗑
+                    </button>
                   </td>
                 </tr>
               );

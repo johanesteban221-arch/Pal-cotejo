@@ -4,6 +4,7 @@
 // Se puede correr en cada despliegue sin riesgo (usa upsert / guard por conteo).
 const { PrismaClient } = require("@prisma/client");
 const bcrypt = require("bcryptjs");
+const { cargarMenu } = require("./menu");
 
 const prisma = new PrismaClient();
 
@@ -38,20 +39,8 @@ async function main() {
     console.log("✔ Mesas iniciales creadas.");
   }
 
-  // ── Productos del bar (solo si no hay ninguno) ──
-  if ((await prisma.producto.count()) === 0) {
-    await prisma.producto.createMany({
-      data: [
-        { nombre: "Cerveza nacional", categoria: "BEBIDA", precio: 5000, stockMinimo: 24 },
-        { nombre: "Gaseosa", categoria: "BEBIDA", precio: 4000, stockMinimo: 12 },
-        { nombre: "Agua", categoria: "BEBIDA", precio: 3000, stockMinimo: 12 },
-        { nombre: "Aguardiente (botella)", categoria: "BEBIDA", precio: 60000, stockMinimo: 3 },
-        { nombre: "Picada personal", categoria: "COMIDA", precio: 18000, stockMinimo: 5 },
-        { nombre: "Alitas x6", categoria: "COMIDA", precio: 22000, stockMinimo: 5 },
-      ],
-    });
-    console.log("✔ Catálogo de productos de ejemplo creado (ajustar a los reales).");
-  }
+  // ── Catálogo: menú real PAL COTEJO (carga única, reemplaza ejemplos) ──
+  await cargarMenu(prisma);
 
   // ── Usuarios staff (upsert por email). Contraseñas vienen de variables de entorno. ──
   const adminEmail = process.env.ADMIN_EMAIL || "admin@palcotejo.co";

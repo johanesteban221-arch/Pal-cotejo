@@ -5,6 +5,7 @@
 // Ejecutar: npm run prisma:seed --workspace @sportbar/db
 const { PrismaClient } = require("@prisma/client");
 const bcrypt = require("bcryptjs");
+const { cargarMenu } = require("./menu");
 
 const prisma = new PrismaClient();
 
@@ -73,20 +74,10 @@ async function main() {
   });
   const mesas = await prisma.mesa.findMany();
 
-  // ── Catálogo de productos del bar (POS) ──
+  // ── Catálogo de productos del bar (menú real PAL COTEJO) ──
+  await prisma.movimientoInventario.deleteMany();
   await prisma.producto.deleteMany();
-  await prisma.producto.createMany({
-    data: [
-      { nombre: "Cerveza nacional", categoria: "BEBIDA", precio: 5000, stock: 80, stockMinimo: 24 },
-      { nombre: "Cerveza importada", categoria: "BEBIDA", precio: 9000, stock: 40, stockMinimo: 12 },
-      { nombre: "Gaseosa", categoria: "BEBIDA", precio: 4000, stock: 60, stockMinimo: 12 },
-      { nombre: "Agua", categoria: "BEBIDA", precio: 3000, stock: 50, stockMinimo: 12 },
-      { nombre: "Aguardiente (botella)", categoria: "BEBIDA", precio: 60000, stock: 8, stockMinimo: 3 },
-      { nombre: "Picada personal", categoria: "COMIDA", precio: 18000, stock: 25, stockMinimo: 5 },
-      { nombre: "Alitas x6", categoria: "COMIDA", precio: 22000, stock: 20, stockMinimo: 5 },
-      { nombre: "Hamburguesa", categoria: "COMIDA", precio: 16000, stock: 15, stockMinimo: 5 },
-    ],
-  });
+  await cargarMenu(prisma, { demo: true });
 
   // ── Clientes ──
   const clientes = [];

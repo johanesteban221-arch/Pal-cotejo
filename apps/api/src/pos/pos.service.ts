@@ -10,7 +10,8 @@ export class PosService {
   listarProductos(soloActivos = true) {
     return this.prisma.producto.findMany({
       where: soloActivos ? { activo: true } : {},
-      orderBy: [{ categoria: "asc" }, { nombre: "asc" }],
+      include: { stockBase: { select: { nombre: true } } },
+      orderBy: [{ categoria: "asc" }, { stockBaseId: "asc" }, { unidades: "asc" }, { nombre: "asc" }],
     });
   }
   crearProducto(dto: CrearProductoDto) {
@@ -122,35 +123,48 @@ export class PosService {
         data: { estado: "PAGADA", metodoPago, cerradaEn: new Date() },
       });
       for (const it of cuenta.items) {
-        await tx.producto.update({
-          where: { id: it.productoId },
-          data: { stock: { decrement: it.cantidad } },
-        });
+        const prod = await tx.producto.findUnique({ where: { id: it.productoId } });
+        if (!prod) continue;
+        // El stock vive en el producto base (si es una presentación). Descuenta unidades × cantidad.
+        const baseId = prod.stockBaseId ?? prod.id;
+        const descuento = prod.unidades * it.cantidad;
+        await tx.producto.update({ where: { id: baseId }, data: { stock: { decrement: descuento } } });
         await tx.movimientoInventario.create({
-          data: { productoId: it.productoId, tipo: "SALIDA", cantidad: it.cantidad, motivo: `Venta cuenta ${id.slice(-6)}` },
+          data: { productoId: baseId, tipo: "SALIDA", cantidad: descuento, motivo: `Venta ${prod.nombre} ×${it.cantidad} · cuenta ${id.slice(-6)}` },
         });
       }
       return pagada;
     });
   }
 
-  /** Registra una entrada de inventario (compra/reposición). */
+  /** Registra una entrada de inventario (compra/reposición). El stock se suma al producto base. */
   async entradaInventario(productoId: string, cantidad: number, motivo?: string) {
     const producto = await this.prisma.producto.findUnique({ where: { id: productoId } });
     if (!producto) throw new NotFoundException("Producto no encontrado");
+    const baseId = producto.stockBaseId ?? producto.id;
     const [actualizado] = await this.prisma.$transaction([
-      this.prisma.producto.update({ where: { id: productoId }, data: { stock: { increment: cantidad } } }),
+      this.prisma.producto.update({ where: { id: baseId }, data: { stock: { increment: cantidad } } }),
       this.prisma.movimientoInventario.create({
-        data: { productoId, tipo: "ENTRADA", cantidad, motivo: motivo || "Entrada de inventario" },
+        data: { productoId: baseId, tipo: "ENTRADA", cantidad, motivo: motivo || "Entrada de inventario" },
       }),
     ]);
     return actualizado;
   }
 
-  /** Productos activos con stock en o por debajo del mínimo. */
+  /** Productos base activos con stock en o por debajo del mínimo. */
   async productosBajoStock() {
-    const productos = await this.prisma.producto.findMany({ where: { activo: true } });
+    const productos = await this.prisma.producto.findMany({ where: { activo: true, stockBaseId: null } });
     return productos.filter((p) => p.stock <= p.stockMinimo);
+  }
+
+  /** Borra un producto por completo, solo si no tiene ventas ni presentaciones. */
+  async eliminarProducto(id: string) {
+    const ventas = await this.prisma.itemCuenta.count({ where: { productoId: id } });
+    if (ventas > 0) throw new BadRequestException("El producto tiene ventas registradas. Use 'Desactivar'.");
+    const pres = await this.prisma.producto.count({ where: { stockBaseId: id } });
+    if (pres > 0) throw new BadRequestException("Tiene presentaciones asociadas. Elimínalas primero.");
+    await this.prisma.producto.delete({ where: { id } });
+    return { ok: true };
   }
 
   async anular(id: string) {

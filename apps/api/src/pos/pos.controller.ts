@@ -41,6 +41,12 @@ export class PosController {
     return this.pos.entradaInventario(id, dto.cantidad, dto.motivo);
   }
 
+  @Roles("ADMIN")
+  @Delete("productos/:id/permanente")
+  eliminar(@Param("id") id: string) {
+    return this.pos.eliminarProducto(id);
+  }
+
   @Get("stock-bajo")
   stockBajo() {
     return this.pos.productosBajoStock();

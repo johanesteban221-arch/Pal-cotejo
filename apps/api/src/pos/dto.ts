@@ -7,6 +7,8 @@ export class CrearProductoDto {
   @IsInt() @Min(0) precio!: number;
   @IsOptional() @IsInt() @Min(0) stock?: number;
   @IsOptional() @IsInt() @Min(0) stockMinimo?: number;
+  @IsOptional() @IsInt() @Min(1) unidades?: number;
+  @IsOptional() @IsString() stockBaseId?: string;
 }
 
 export class ActualizarProductoDto {
