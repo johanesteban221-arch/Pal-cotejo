@@ -151,6 +151,46 @@ export class PosService {
     return actualizado;
   }
 
+  /** Valor del inventario (a precio de venta) por producto base + total. */
+  async valorInventario() {
+    const bases = await this.prisma.producto.findMany({
+      where: { stockBaseId: null, activo: true },
+      orderBy: [{ categoria: "asc" }, { nombre: "asc" }],
+    });
+    const items = bases.map((p) => ({
+      id: p.id,
+      nombre: p.nombre,
+      categoria: p.categoria,
+      stock: p.stock,
+      precio: p.precio,
+      valor: p.stock * p.precio,
+      bajo: p.stock <= p.stockMinimo,
+    }));
+    return {
+      valorTotal: items.reduce((s, i) => s + i.valor, 0),
+      unidadesTotales: items.reduce((s, i) => s + i.stock, 0),
+      productosBajos: items.filter((i) => i.bajo).length,
+      items,
+    };
+  }
+
+  /** Historial de movimientos de inventario (kardex). */
+  async movimientos(limit = 150) {
+    const movs = await this.prisma.movimientoInventario.findMany({
+      take: Math.min(500, limit),
+      orderBy: { creadoEn: "desc" },
+      include: { producto: { select: { nombre: true } } },
+    });
+    return movs.map((m) => ({
+      id: m.id,
+      fecha: m.creadoEn,
+      producto: m.producto?.nombre ?? "—",
+      tipo: m.tipo,
+      cantidad: m.cantidad,
+      motivo: m.motivo ?? "",
+    }));
+  }
+
   /** Productos base activos con stock en o por debajo del mínimo. */
   async productosBajoStock() {
     const productos = await this.prisma.producto.findMany({ where: { activo: true, stockBaseId: null } });

@@ -1,0 +1,20 @@
+const { chromium } = require("playwright");
+const path = require("path");
+const OUT = path.join(__dirname, "..", "demo-capturas", "v2");
+const BASE = "http://localhost:3000";
+const wait = (ms) => new Promise((r) => setTimeout(r, ms));
+(async()=>{
+  const b = await chromium.launch();
+  const ctx = await b.newContext({ viewport:{width:1320,height:980}, deviceScaleFactor:1.2 });
+  const p = await ctx.newPage();
+  await p.goto(`${BASE}/admin/login`,{waitUntil:"networkidle"});
+  await p.getByPlaceholder("admin@palcotejo.co").fill("admin@palcotejo.co");
+  await p.getByPlaceholder("••••••••").fill("admin123");
+  await p.getByRole("button",{name:/Iniciar sesión/}).click();
+  await p.waitForURL("**/admin",{timeout:10000});
+  await p.goto(`${BASE}/admin/inventario`,{waitUntil:"networkidle"});
+  await wait(2000);
+  await p.screenshot({ path: path.join(OUT,"admin-kardex.png"), fullPage:true });
+  console.log("kardex ✓");
+  await b.close();
+})().catch(e=>{console.error(e);process.exit(1);});

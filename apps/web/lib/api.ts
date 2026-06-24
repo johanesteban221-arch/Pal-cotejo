@@ -260,6 +260,23 @@ export const anularCuenta = (id: string) =>
   sendJSON<Cuenta>(`/api/pos/cuentas/${id}/anular`, "POST", {});
 export const getReporteBar = () => getJSON<ReporteBar>("/api/pos/reporte");
 
+export interface ValorInventario {
+  valorTotal: number;
+  unidadesTotales: number;
+  productosBajos: number;
+  items: { id: string; nombre: string; categoria: string; stock: number; precio: number; valor: number; bajo: boolean }[];
+}
+export interface Movimiento {
+  id: string;
+  fecha: string;
+  producto: string;
+  tipo: "ENTRADA" | "SALIDA" | "AJUSTE";
+  cantidad: number;
+  motivo: string;
+}
+export const getValorInventario = () => getJSON<ValorInventario>("/api/pos/inventario/valor");
+export const getMovimientos = (limit = 150) => getJSON<Movimiento[]>(`/api/pos/inventario/movimientos?limit=${limit}`);
+
 /** Descarga el CSV de clientes (con auth) disparando el guardado en el navegador. */
 export async function descargarClientesCsv(segmento?: string) {
   const q = segmento ? `?segmento=${segmento}` : "";

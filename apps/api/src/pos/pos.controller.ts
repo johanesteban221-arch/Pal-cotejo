@@ -52,6 +52,16 @@ export class PosController {
     return this.pos.productosBajoStock();
   }
 
+  @Get("inventario/valor")
+  valorInventario() {
+    return this.pos.valorInventario();
+  }
+
+  @Get("inventario/movimientos")
+  movimientos(@Query("limit") limit?: string) {
+    return this.pos.movimientos(limit ? Number(limit) : 150);
+  }
+
   // ── Cuentas ──
   @Post("cuentas")
   abrir(@Body() dto: AbrirCuentaDto) {

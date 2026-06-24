@@ -14,6 +14,7 @@ const ITEMS = [
   { seccion: "Gestión" },
   { href: "/admin/clientes", icon: "👥", label: "Clientes" },
   { href: "/admin/productos", icon: "🍔", label: "Productos", soloAdmin: true },
+  { href: "/admin/inventario", icon: "📦", label: "Inventario", soloAdmin: true },
   { href: "/admin/tarifas", icon: "💰", label: "Tarifas", soloAdmin: true },
   { href: "/admin/bloqueos", icon: "🔒", label: "Bloqueos", soloAdmin: true },
 ];
