@@ -18,6 +18,8 @@ export const envValidationSchema = Joi.object({
 
   // Opcionales (con valores por defecto donde aplica)
   JWT_EXPIRES_IN: Joi.string().optional(),
+  // Origenes permitidos para CORS (lista separada por comas). Vacio => modo abierto.
+  CORS_ORIGINS: Joi.string().optional().allow(""),
   DEFAULT_DEPOSIT_PERCENT: Joi.number().optional(),
   N8N_INTEGRATION_KEY: Joi.string().optional(),
   N8N_WEBHOOK_RESERVA_CONFIRMADA: Joi.string().uri().optional().allow(""),
