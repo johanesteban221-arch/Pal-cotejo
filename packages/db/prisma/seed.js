@@ -30,6 +30,18 @@ const NOMBRES = [
 ];
 
 async function main() {
+  // Fail-safe: seed.js es DESTRUCTIVO (borra y regenera todo). Solo debe correr
+  // como semilla de DEMO, nunca en un arranque de producción. Requiere opt-in
+  // explícito con SEED_DEMO=1; de lo contrario termina sin tocar la base.
+  if (process.env.SEED_DEMO !== "1") {
+    console.log(
+      "⏭  seed.js OMITIDO: es el seed de DEMO y borra todos los datos.\n" +
+      "   Para sembrar la demo, exporta SEED_DEMO=1 antes de ejecutarlo.\n" +
+      "   En producción usa 'prisma:seed-prod' (idempotente, no borra nada)."
+    );
+    process.exit(0); // salida limpia: no rompe el arranque ni borra datos
+  }
+
   console.log("Limpiando datos previos…");
   await prisma.cuenta.deleteMany(); // cascada borra items_cuenta (libera FK a productos)
   await prisma.reservaMesa.deleteMany();
