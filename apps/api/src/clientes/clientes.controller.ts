@@ -17,7 +17,7 @@ import { RolesGuard } from "../auth/roles.guard";
 import { Roles } from "../auth/roles.decorator";
 
 @UseGuards(JwtAuthGuard, RolesGuard)
-@Roles("ADMIN", "CAJA")
+@Roles("ADMIN", "SUPERVISOR", "CAJA")
 @Controller("admin/clientes")
 export class ClientesController {
   constructor(private readonly clientes: ClientesService) {}
@@ -37,6 +37,7 @@ export class ClientesController {
   }
 
   /** Descarga CSV. */
+  @Roles("ADMIN", "SUPERVISOR")
   @Get("exportar")
   async exportar(@Res() res: Response, @Query("segmento") segmento?: string) {
     const csv = await this.clientes.exportarCsv(segmento);
@@ -55,6 +56,7 @@ export class ClientesController {
     return this.clientes.stats(id);
   }
 
+  @Roles("ADMIN", "SUPERVISOR")
   @Patch(":id")
   actualizar(@Param("id") id: string, @Body() dto: ActualizarClienteDto) {
     return this.clientes.actualizar(id, dto);

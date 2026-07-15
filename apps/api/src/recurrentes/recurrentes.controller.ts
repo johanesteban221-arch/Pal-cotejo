@@ -2,8 +2,11 @@ import { Body, Controller, Delete, Get, Param, Post, Query, UseGuards } from "@n
 import { RecurrentesService } from "./recurrentes.service";
 import { CrearRecurrenteDto } from "./dto";
 import { JwtAuthGuard } from "../auth/jwt-auth.guard";
+import { RolesGuard } from "../auth/roles.guard";
+import { Roles } from "../auth/roles.decorator";
 
-@UseGuards(JwtAuthGuard)
+@UseGuards(JwtAuthGuard, RolesGuard)
+@Roles("ADMIN", "SUPERVISOR")
 @Controller("recurrentes")
 export class RecurrentesController {
   constructor(private readonly recurrentes: RecurrentesService) {}

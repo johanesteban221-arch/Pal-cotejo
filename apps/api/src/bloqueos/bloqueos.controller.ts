@@ -2,9 +2,12 @@ import { Body, Controller, Delete, Get, Param, Post, UseGuards } from "@nestjs/c
 import { BloqueosService } from "./bloqueos.service";
 import { CrearBloqueoDto } from "./dto";
 import { JwtAuthGuard } from "../auth/jwt-auth.guard";
+import { RolesGuard } from "../auth/roles.guard";
+import { Roles } from "../auth/roles.decorator";
 
 // Gestión de bloqueos: solo staff autenticado.
-@UseGuards(JwtAuthGuard)
+@UseGuards(JwtAuthGuard, RolesGuard)
+@Roles("ADMIN", "SUPERVISOR")
 @Controller("bloqueos")
 export class BloqueosController {
   constructor(private readonly bloqueos: BloqueosService) {}

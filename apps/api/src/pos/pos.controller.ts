@@ -1,4 +1,4 @@
-import { Body, Controller, Delete, Get, Param, Patch, Post, Query, UseGuards } from "@nestjs/common";
+import { Body, Controller, Delete, Get, Param, Patch, Post, Query, Req, UseGuards } from "@nestjs/common";
 import { PosService } from "./pos.service";
 import { AbrirCuentaDto, ActualizarProductoDto, AgregarItemDto, CobrarDto, CrearProductoDto, EntradaInventarioDto } from "./dto";
 import { JwtAuthGuard } from "../auth/jwt-auth.guard";
@@ -6,7 +6,7 @@ import { RolesGuard } from "../auth/roles.guard";
 import { Roles } from "../auth/roles.decorator";
 
 @UseGuards(JwtAuthGuard, RolesGuard)
-@Roles("ADMIN", "CAJA")
+@Roles("ADMIN", "SUPERVISOR", "CAJA")
 @Controller("pos")
 export class PosController {
   constructor(private readonly pos: PosService) {}
@@ -52,11 +52,13 @@ export class PosController {
     return this.pos.productosBajoStock();
   }
 
+  @Roles("ADMIN", "SUPERVISOR")
   @Get("inventario/valor")
   valorInventario() {
     return this.pos.valorInventario();
   }
 
+  @Roles("ADMIN", "SUPERVISOR")
   @Get("inventario/movimientos")
   movimientos(@Query("limit") limit?: string) {
     return this.pos.movimientos(limit ? Number(limit) : 150);
@@ -94,8 +96,8 @@ export class PosController {
   }
 
   @Post("cuentas/:id/anular")
-  anular(@Param("id") id: string) {
-    return this.pos.anular(id);
+  anular(@Param("id") id: string, @Req() req: any) {
+    return this.pos.anular(id, req.user.rol);
   }
 
   // ── Reporte ──

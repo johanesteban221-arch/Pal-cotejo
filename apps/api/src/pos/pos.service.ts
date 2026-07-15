@@ -1,4 +1,4 @@
-import { BadRequestException, Injectable, NotFoundException } from "@nestjs/common";
+import { BadRequestException, ForbiddenException, Injectable, NotFoundException } from "@nestjs/common";
 import { PrismaService } from "../prisma/prisma.service";
 import { AbrirCuentaDto, ActualizarProductoDto, AgregarItemDto, CrearProductoDto } from "./dto";
 
@@ -207,7 +207,16 @@ export class PosService {
     return { ok: true };
   }
 
-  async anular(id: string) {
+  async anular(id: string, rol: string) {
+    const cuenta = await this.prisma.cuenta.findUnique({
+      where: { id },
+      select: { estado: true },
+    });
+    if (!cuenta) throw new NotFoundException("Cuenta no encontrada");
+    // Solo ADMIN puede anular una cuenta ya cobrada; S/C solo cuentas abiertas.
+    if (cuenta.estado === "PAGADA" && rol !== "ADMIN") {
+      throw new ForbiddenException("Solo un administrador puede anular una cuenta ya cobrada");
+    }
     return this.prisma.cuenta.update({
       where: { id },
       data: { estado: "ANULADA", cerradaEn: new Date() },

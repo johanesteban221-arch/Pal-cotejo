@@ -2,6 +2,8 @@ import { Body, Controller, Get, Param, Post, Query, BadRequestException, UseGuar
 import { ReservasService } from "./reservas.service";
 import { CrearReservaDto, CrearReservaManualDto } from "./dto";
 import { JwtAuthGuard } from "../auth/jwt-auth.guard";
+import { RolesGuard } from "../auth/roles.guard";
+import { Roles } from "../auth/roles.decorator";
 
 @Controller("reservas")
 export class ReservasController {
@@ -14,21 +16,24 @@ export class ReservasController {
   }
 
   // Reserva manual ingresada por caja: requiere sesión de staff.
-  @UseGuards(JwtAuthGuard)
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles("ADMIN", "SUPERVISOR", "CAJA")
   @Post("manual")
   crearManual(@Body() dto: CrearReservaManualDto) {
     return this.reservas.crearManual(dto);
   }
 
   // Acción de caja: requiere sesión de staff.
-  @UseGuards(JwtAuthGuard)
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles("ADMIN", "SUPERVISOR", "CAJA")
   @Post(":id/cancelar")
   cancelar(@Param("id") id: string, @Body("motivo") motivo?: string) {
     return this.reservas.cancelar(id, motivo);
   }
 
   /** GET /api/reservas?fecha=YYYY-MM-DD (panel admin) — requiere sesión. */
-  @UseGuards(JwtAuthGuard)
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles("ADMIN", "SUPERVISOR", "CAJA")
   @Get()
   listar(@Query("fecha") fecha: string) {
     if (!fecha || !/^\d{4}-\d{2}-\d{2}$/.test(fecha)) {
