@@ -15,6 +15,7 @@ import { IntegracionModule } from "./integracion/integracion.module";
 import { HealthModule } from "./health/health.module";
 import { ClientesModule } from "./clientes/clientes.module";
 import { PosModule } from "./pos/pos.module";
+import { UsuariosModule } from "./usuarios/usuarios.module";
 import { envValidationSchema } from "./config/env.validation";
 
 @Module({
@@ -43,6 +44,7 @@ import { envValidationSchema } from "./config/env.validation";
     HealthModule,
     ClientesModule,
     PosModule,
+    UsuariosModule,
   ],
 })
 export class AppModule {}
