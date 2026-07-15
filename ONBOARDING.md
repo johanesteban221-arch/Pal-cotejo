@@ -145,3 +145,38 @@ git push origin main           # esto DISPARA el auto-deploy a producción
 - No inventar tipos/parámetros de nodos n8n — confirmar con n8n-mcp.
 - Los secretos van en credenciales de n8n / variables de entorno, **nunca hardcodeados**.
 - Fase 2 (pagos Wompi + WhatsApp/Email) está **en pausa** hasta que el cliente defina la pasarela.
+
+---
+
+## 11. Nota sobre el naming (sportbar vs pal-cotejo)
+
+**Esto es una decisión deliberada, no un descuido. No lo "arregles".**
+
+En el repo conviven dos nombres y es intencional:
+
+- **Interno (se mantiene como `sportbar`, a propósito):**
+  - El **scope de npm workspaces** `@sportbar/*` (`@sportbar/api`, `@sportbar/web`,
+    `@sportbar/db`) y el nombre del paquete raíz `sportbar-reservas`.
+  - Los **identificadores de PostgreSQL**: rol/usuario `sportbar`, base `sportbar`,
+    volumen Docker `sportbar_pgdata` y contenedor `sportbar_postgres`.
+- **De cara al usuario (ya usa `pal-cotejo`):** los servicios de despliegue
+  (`pal-cotejo-db/api/web`), las URLs públicas (p. ej. `pal-cotejo-api.onrender.com`
+  y el host de Easypanel) y los correos del staff `@palcotejo.co`.
+
+**Por qué el scope npm se deja como está:** es invisible para el cliente y para el
+proveedor de despliegue (Easypanel solo construye el Dockerfile; los `--workspace`
+internos son consistentes entre sí). Renombrarlo sería puro pulido cosmético sin
+beneficio funcional.
+
+**Por qué NO se renombran los identificadores de Postgres:** el volumen local y las
+bases ya provisionadas (Render/Easypanel) se inicializaron con el rol y la base
+`sportbar`. Postgres solo crea usuario/base en el **primer arranque de un volumen
+vacío**; cambiar esos nombres contra un volumen o una DB existente **rompe la
+conexión** (`pg_isready`/auth fallan) y, en la práctica, implica recrear la base con
+**riesgo de pérdida de datos** — todo ello a cambio de **cero beneficio funcional**
+(un nombre de rol de base de datos no se ve en ningún lado y es perfectamente válido
+aunque diga "sportbar").
+
+**Conclusión:** mantener `@sportbar` y los identificadores de Postgres es la opción
+de menor riesgo. Lo de cara al usuario ya está alineado a `pal-cotejo`; no hay nada
+que corregir aquí.
