@@ -3,12 +3,17 @@ import { AuthService } from "./auth.service";
 import { LoginDto } from "./dto";
 import { JwtAuthGuard } from "./jwt-auth.guard";
 import { Public } from "./public.decorator";
+import { Throttle } from "@nestjs/throttler";
+import { EmailThrottlerGuard } from "./email-throttler.guard";
 
 @Controller("auth")
 export class AuthController {
   constructor(private readonly auth: AuthService) {}
 
   @Public()
+  // Rate limit SOLO aqui: 5 intentos / 60s por email; al superar, 429 y bloqueo 5 min.
+  @UseGuards(EmailThrottlerGuard)
+  @Throttle({ default: { limit: 5, ttl: 60000, blockDuration: 300000 } })
   @Post("login")
   @HttpCode(200)
   login(@Body() dto: LoginDto) {

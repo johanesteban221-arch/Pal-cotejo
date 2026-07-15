@@ -16,6 +16,7 @@
     "@nestjs/platform-express": "^10.4.0",
     "@nestjs/schedule": "^4.1.0",
     "@nestjs/terminus": "^10.2.3",
+    "@nestjs/throttler": "6.4.0",
     "@prisma/client": "^5.22.0",
     "@sportbar/db": "*",
     "bcryptjs": "^2.4.3",

@@ -2,6 +2,7 @@ import { join } from "path";
 import { Module } from "@nestjs/common";
 import { ConfigModule } from "@nestjs/config";
 import { ScheduleModule } from "@nestjs/schedule";
+import { ThrottlerModule } from "@nestjs/throttler";
 import { PrismaModule } from "./prisma/prisma.module";
 import { CanchasModule } from "./canchas/canchas.module";
 import { DisponibilidadModule } from "./disponibilidad/disponibilidad.module";
@@ -31,6 +32,9 @@ import { envValidationSchema } from "./config/env.validation";
       validationOptions: { allowUnknown: true, abortEarly: false },
     }),
     ScheduleModule.forRoot(),
+    // Rate limiting: config + almacenamiento (in-memory, 1 instancia en Easypanel).
+    // El guard NO es global; solo se aplica al login (ver auth.controller).
+    ThrottlerModule.forRoot([{ ttl: 60000, limit: 5, blockDuration: 300000 }]),
     PrismaModule,
     AuthModule,
     CanchasModule,
