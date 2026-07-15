@@ -71,3 +71,32 @@ export function franjasSinCobertura(
   }
   return huecos;
 }
+
+// ── Validación de solapamiento (Fase C) ──────────────────────────────
+// Franja mínima para evaluar conflictos entre tarifas.
+export interface FranjaTarifa {
+  diaSemana: number | null;
+  horaInicio: string;
+  horaFin: string;
+}
+
+/** ¿[A.ini,A.fin) y [B.ini,B.fin) se solapan? Desigualdad ESTRICTA:
+ *  franjas contiguas (A.fin == B.ini) NO se consideran solapadas. */
+export function solapaEnTiempo(a: FranjaTarifa, b: FranjaTarifa): boolean {
+  return aMinutos(a.horaInicio) < aMinutos(b.horaFin) && aMinutos(b.horaInicio) < aMinutos(a.horaFin);
+}
+
+/** ¿Misma prioridad de resolución? Ambas null, o ambas el mismo día específico.
+ *  null vs día-específico NO es mismo tier (el específico hace override determinista). */
+export function mismoTier(a: FranjaTarifa, b: FranjaTarifa): boolean {
+  return (
+    (a.diaSemana === null && b.diaSemana === null) ||
+    (a.diaSemana !== null && b.diaSemana !== null && a.diaSemana === b.diaSemana)
+  );
+}
+
+/** Conflicto = solape temporal Y mismo tier. Un solape null↔específico NO es
+ *  conflicto (override permitido); solo el mismo-tier solapado es ambiguo. */
+export function hayConflicto(x: FranjaTarifa, otras: FranjaTarifa[]): boolean {
+  return otras.some((o) => solapaEnTiempo(x, o) && mismoTier(x, o));
+}
