@@ -19,6 +19,13 @@ import {
 } from "../../../lib/api";
 import { NoAutorizado, logout } from "../../../lib/auth";
 
+const CATS: { key: "" | "BEBIDA" | "COMIDA" | "OTRO"; label: string }[] = [
+  { key: "", label: "Todos" },
+  { key: "BEBIDA", label: "Bebidas" },
+  { key: "COMIDA", label: "Comidas" },
+  { key: "OTRO", label: "Otros" },
+];
+
 export default function BarPOS() {
   const router = useRouter();
   const [productos, setProductos] = useState<Producto[]>([]);
@@ -27,6 +34,8 @@ export default function BarPOS() {
   const [sel, setSel] = useState<Cuenta | null>(null);
   const [nuevaMesa, setNuevaMesa] = useState("");
   const [msg, setMsg] = useState("");
+  const [cat, setCat] = useState<"" | "BEBIDA" | "COMIDA" | "OTRO">("");
+  const [flash, setFlash] = useState<string | null>(null);
   const [recibo, setRecibo] = useState<{
     mesa: string | null; total: number; metodo: string; codigo: string; fecha: string;
     items: { nombre: string; cantidad: number; subtotal: number }[];
@@ -66,6 +75,8 @@ export default function BarPOS() {
   }
   function add(productoId: string) {
     if (!sel) return;
+    setFlash(productoId);
+    setTimeout(() => setFlash(null), 180);
     agregarItem(sel.id, productoId).then((c) => { setSel(c); recargar(); }).catch(onErr);
   }
   function quitar(itemId: string) {
@@ -91,8 +102,7 @@ export default function BarPOS() {
     anularCuenta(sel.id).then(() => { aviso("Cuenta anulada"); setSel(null); recargar(); }).catch(onErr);
   }
 
-  const bebidas = productos.filter((p) => p.categoria === "BEBIDA");
-  const comidas = productos.filter((p) => p.categoria !== "BEBIDA");
+  const catalogo = productos.filter((p) => (cat ? p.categoria === cat : true));
 
   return (
     <>
@@ -160,22 +170,64 @@ export default function BarPOS() {
                 <div className="muted" style={{ marginBottom: 14 }}>Cuenta vacía. Agrega productos abajo.</div>
               )}
 
-              {/* Catálogo */}
-              <div className="form-label">Bebidas</div>
-              <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginBottom: 12 }}>
-                {bebidas.map((p) => (
-                  <button key={p.id} className="btn-outline" style={{ padding: "8px 12px", fontSize: 13 }} onClick={() => add(p.id)}>
-                    {p.nombre} · {formatoCOP(p.precio)}
+              {/* Catálogo: pestañas por categoría + rejilla de tiles tocables */}
+              <div className="form-label">Catálogo</div>
+              <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginBottom: 12 }}>
+                {CATS.map((c) => (
+                  <button
+                    key={c.key}
+                    onClick={() => setCat(c.key)}
+                    className="status-pill"
+                    style={{
+                      cursor: "pointer",
+                      fontSize: 13,
+                      padding: "6px 14px",
+                      border: `1px solid ${cat === c.key ? "var(--gold)" : "var(--border)"}`,
+                      background: cat === c.key ? "rgba(212,160,23,.14)" : "transparent",
+                      color: cat === c.key ? "var(--gold)" : "var(--muted)",
+                    }}
+                  >
+                    {c.label}
                   </button>
                 ))}
               </div>
-              <div className="form-label">Comidas / otros</div>
-              <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginBottom: 16 }}>
-                {comidas.map((p) => (
-                  <button key={p.id} className="btn-outline" style={{ padding: "8px 12px", fontSize: 13 }} onClick={() => add(p.id)}>
-                    {p.nombre} · {formatoCOP(p.precio)}
-                  </button>
-                ))}
+              <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(110px, 1fr))", gap: 10, marginBottom: 16 }}>
+                {catalogo.map((p) => {
+                  // Sin stock solo para productos BASE (las presentaciones comparten el stock del base).
+                  const sinStock = p.stockBaseId == null && p.stock <= 0;
+                  const activo = flash === p.id;
+                  return (
+                    <button
+                      key={p.id}
+                      disabled={sinStock}
+                      onClick={() => add(p.id)}
+                      title={p.nombre}
+                      style={{
+                        minHeight: 92,
+                        display: "flex",
+                        flexDirection: "column",
+                        justifyContent: "space-between",
+                        gap: 6,
+                        padding: 12,
+                        borderRadius: 10,
+                        textAlign: "left",
+                        border: `1px solid ${activo ? "var(--gold)" : "var(--border-g)"}`,
+                        background: sinStock ? "var(--bg)" : activo ? "rgba(212,160,23,.22)" : "var(--bg2)",
+                        opacity: sinStock ? 0.45 : 1,
+                        cursor: sinStock ? "not-allowed" : "pointer",
+                        transition: "background .12s, border-color .12s",
+                        color: "var(--cream)",
+                      }}
+                    >
+                      <span style={{ fontFamily: "var(--font-d)", fontSize: 13, lineHeight: 1.2 }}>{p.nombre}</span>
+                      <span style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-end", gap: 6 }}>
+                        <span style={{ color: "var(--gold)", fontFamily: "var(--font-d)", fontSize: 14 }}>{formatoCOP(p.precio)}</span>
+                        {sinStock && <span className="muted" style={{ fontSize: 10 }}>Sin stock</span>}
+                      </span>
+                    </button>
+                  );
+                })}
+                {catalogo.length === 0 && <div className="muted">Sin productos en esta categoría.</div>}
               </div>
 
               {/* Cobrar */}
