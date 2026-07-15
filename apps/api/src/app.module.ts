@@ -18,6 +18,7 @@ import { ClientesModule } from "./clientes/clientes.module";
 import { PosModule } from "./pos/pos.module";
 import { UsuariosModule } from "./usuarios/usuarios.module";
 import { TarifasModule } from "./tarifas/tarifas.module";
+import { CanchasAdminModule } from "./canchas-admin/canchas-admin.module";
 import { envValidationSchema } from "./config/env.validation";
 
 @Module({
@@ -51,6 +52,7 @@ import { envValidationSchema } from "./config/env.validation";
     PosModule,
     UsuariosModule,
     TarifasModule,
+    CanchasAdminModule,
   ],
 })
 export class AppModule {}
