@@ -1,0 +1,2 @@
+-- AlterEnum
+ALTER TYPE "RolStaff" ADD VALUE 'SUPERVISOR';

@@ -7,7 +7,7 @@ export interface StaffUser {
   id: string;
   nombre: string;
   email: string;
-  rol: "ADMIN" | "CAJA";
+  rol: "ADMIN" | "SUPERVISOR" | "CAJA";
 }
 
 export function getToken(): string | null {

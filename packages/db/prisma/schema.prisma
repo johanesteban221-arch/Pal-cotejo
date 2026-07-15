@@ -74,6 +74,7 @@ enum EstadoReservaMesa {
 enum RolStaff {
   ADMIN
   CAJA
+  SUPERVISOR // operacion amplia; NO gestiona usuarios/tarifas/inventario ni anula cobradas
 }
 
 // ── Entidades principales ──────────────────────────────────────────
