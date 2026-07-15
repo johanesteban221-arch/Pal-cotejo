@@ -219,6 +219,7 @@ export interface ItemCuenta {
 export interface Cuenta {
   id: string;
   mesa: string | null;
+  mesaId: string | null;
   reservaId: string | null;
   clienteId: string | null;
   estado: "ABIERTA" | "PAGADA" | "ANULADA";
@@ -254,6 +255,12 @@ export const getCuentasAbiertas = () => getJSON<Cuenta[]>("/api/pos/cuentas/abie
 export const getCuenta = (id: string) => getJSON<Cuenta>(`/api/pos/cuentas/${id}`);
 export const abrirCuenta = (data: Record<string, unknown>) =>
   sendJSON<Cuenta>("/api/pos/cuentas", "POST", data);
+export interface Mesa {
+  id: string;
+  nombre: string;
+  capacidad: number;
+}
+export const getMesas = () => getJSON<Mesa[]>("/api/pos/mesas");
 export const agregarItem = (cuentaId: string, productoId: string, cantidad = 1) =>
   sendJSON<Cuenta>(`/api/pos/cuentas/${cuentaId}/items`, "POST", { productoId, cantidad });
 export const quitarItem = (itemId: string) =>

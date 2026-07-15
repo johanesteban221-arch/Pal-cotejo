@@ -5,8 +5,10 @@ import { useRouter } from "next/navigation";
 import {
   Producto,
   Cuenta,
+  Mesa,
   ReporteBar,
   getProductos,
+  getMesas,
   getCuentasAbiertas,
   getCuenta,
   abrirCuenta,
@@ -29,6 +31,7 @@ const CATS: { key: "" | "BEBIDA" | "COMIDA" | "OTRO"; label: string }[] = [
 export default function BarPOS() {
   const router = useRouter();
   const [productos, setProductos] = useState<Producto[]>([]);
+  const [mesas, setMesas] = useState<Mesa[]>([]);
   const [cuentas, setCuentas] = useState<Cuenta[]>([]);
   const [reporte, setReporte] = useState<ReporteBar | null>(null);
   const [sel, setSel] = useState<Cuenta | null>(null);
@@ -58,17 +61,24 @@ export default function BarPOS() {
   }
   useEffect(() => {
     getProductos().then(setProductos).catch(onErr);
+    getMesas().then(setMesas).catch(onErr);
     recargar(); // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   function abrir() {
-    abrirCuenta({ mesa: nuevaMesa || "Mesa" })
+    abrirCuenta({ mesa: nuevaMesa || "Barra" })
       .then((c) => {
         setNuevaMesa("");
         recargar();
         getCuenta(c.id).then(setSel);
       })
       .catch(onErr);
+  }
+  function abrirEnMesa(m: Mesa) {
+    abrirCuenta({ mesaId: m.id })
+      .then((c) => { recargar(); getCuenta(c.id).then(setSel); })
+      // Carrera: si otra caja abrió primero (409), muestra el aviso y refresca.
+      .catch((e) => { onErr(e); recargar(); });
   }
   function seleccionar(id: string) {
     getCuenta(id).then(setSel).catch(onErr);
@@ -120,25 +130,69 @@ export default function BarPOS() {
       )}
 
       <div className="grid-2" style={{ alignItems: "start" }}>
-        {/* Cuentas abiertas */}
-        <div className="admin-table-wrap">
-          <div className="admin-table-header">
-            <span className="admin-table-title">Cuentas abiertas</span>
+        {/* Salón de mesas + Walk-in (columna izquierda) */}
+        <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+          <div className="admin-table-wrap">
+            <div className="admin-table-header">
+              <span className="admin-table-title">Salón — mesas</span>
+            </div>
+            <div style={{ padding: 16, display: "grid", gridTemplateColumns: "repeat(auto-fill,minmax(120px,1fr))", gap: 10 }}>
+              {mesas.map((m) => {
+                const cta = cuentas.find((c) => c.mesaId === m.id);
+                const ocupada = !!cta;
+                const activa = !!cta && sel?.id === cta.id;
+                return (
+                  <button
+                    key={m.id}
+                    onClick={() => (cta ? seleccionar(cta.id) : abrirEnMesa(m))}
+                    style={{
+                      minHeight: 88,
+                      display: "flex",
+                      flexDirection: "column",
+                      justifyContent: "space-between",
+                      gap: 4,
+                      padding: 12,
+                      borderRadius: 10,
+                      textAlign: "left",
+                      cursor: "pointer",
+                      border: `1px solid ${activa ? "var(--gold)" : ocupada ? "rgba(212,160,23,.5)" : "var(--border-g)"}`,
+                      background: ocupada ? "rgba(212,160,23,.14)" : "var(--bg2)",
+                      color: "var(--cream)",
+                    }}
+                  >
+                    <span style={{ fontFamily: "var(--font-d)", fontSize: 14 }}>{m.nombre}</span>
+                    <span className="muted" style={{ fontSize: 11 }}>Cap. {m.capacidad}</span>
+                    {ocupada ? (
+                      <span style={{ color: "var(--gold)", fontFamily: "var(--font-d)", fontSize: 13 }}>{formatoCOP(cta!.total)} · Ocupada</span>
+                    ) : (
+                      <span style={{ color: "#4CAF50", fontSize: 12 }}>● Libre</span>
+                    )}
+                  </button>
+                );
+              })}
+              {mesas.length === 0 && <div className="muted">No hay mesas configuradas.</div>}
+            </div>
           </div>
-          <div style={{ padding: 16, display: "flex", gap: 8 }}>
-            <input className="form-input" placeholder="Mesa / nombre (ej. Mesa 3)" value={nuevaMesa} onChange={(e) => setNuevaMesa(e.target.value)} onKeyDown={(e) => e.key === "Enter" && abrir()} />
-            <button className="btn-gold" style={{ whiteSpace: "nowrap" }} onClick={abrir}>+ Abrir</button>
-          </div>
-          <div style={{ padding: "0 16px 16px", display: "grid", gridTemplateColumns: "repeat(auto-fill,minmax(150px,1fr))", gap: 10 }}>
-            {cuentas.map((c) => (
-              <div key={c.id} onClick={() => seleccionar(c.id)}
-                style={{ border: `1px solid ${sel?.id === c.id ? "var(--gold)" : "var(--border)"}`, borderRadius: 10, padding: 12, cursor: "pointer", background: sel?.id === c.id ? "rgba(212,160,23,.08)" : "var(--bg)" }}>
-                <div style={{ fontFamily: "var(--font-d)", color: "var(--cream)" }}>{c.mesa || "Mesa"}</div>
-                <div className="muted" style={{ fontSize: 12 }}>{c.items?.length ?? 0} ítems</div>
-                <div style={{ color: "var(--gold)", fontFamily: "var(--font-d)", marginTop: 4 }}>{formatoCOP(c.total)}</div>
-              </div>
-            ))}
-            {cuentas.length === 0 && <div className="muted">No hay cuentas abiertas. Abre una arriba.</div>}
+
+          <div className="admin-table-wrap">
+            <div className="admin-table-header">
+              <span className="admin-table-title">Walk-in / Barra</span>
+            </div>
+            <div style={{ padding: 16, display: "flex", gap: 8 }}>
+              <input className="form-input" placeholder="Nombre (ej. Barra, Juan)" value={nuevaMesa} onChange={(e) => setNuevaMesa(e.target.value)} onKeyDown={(e) => e.key === "Enter" && abrir()} />
+              <button className="btn-gold" style={{ whiteSpace: "nowrap" }} onClick={abrir}>+ Abrir</button>
+            </div>
+            <div style={{ padding: "0 16px 16px", display: "grid", gridTemplateColumns: "repeat(auto-fill,minmax(140px,1fr))", gap: 10 }}>
+              {cuentas.filter((c) => !c.mesaId).map((c) => (
+                <div key={c.id} onClick={() => seleccionar(c.id)}
+                  style={{ border: `1px solid ${sel?.id === c.id ? "var(--gold)" : "var(--border)"}`, borderRadius: 10, padding: 12, cursor: "pointer", background: sel?.id === c.id ? "rgba(212,160,23,.08)" : "var(--bg)" }}>
+                  <div style={{ fontFamily: "var(--font-d)", color: "var(--cream)" }}>{c.mesa || "Walk-in"}</div>
+                  <div className="muted" style={{ fontSize: 12 }}>{c.items?.length ?? 0} ítems</div>
+                  <div style={{ color: "var(--gold)", fontFamily: "var(--font-d)", marginTop: 4 }}>{formatoCOP(c.total)}</div>
+                </div>
+              ))}
+              {cuentas.filter((c) => !c.mesaId).length === 0 && <div className="muted" style={{ fontSize: 13 }}>Sin cuentas walk-in.</div>}
+            </div>
           </div>
         </div>
 
