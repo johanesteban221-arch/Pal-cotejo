@@ -84,6 +84,8 @@ model Cancha {
   nombre      String
   tipo        String?  // ej. "Futbol 5", "Futbol 8"
   descripcion String?
+  capacidad   Int?     // cupo / personas (opcional)
+  orden       Int?     // orden en listados y en el calendario (opcional)
   activa      Boolean  @default(true)
   creadoEn    DateTime @default(now())
   actualizadoEn DateTime @updatedAt
