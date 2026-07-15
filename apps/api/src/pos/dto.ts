@@ -26,6 +26,7 @@ export class EntradaInventarioDto {
 
 export class AbrirCuentaDto {
   @IsOptional() @IsString() mesa?: string;
+  @IsOptional() @IsString() mesaId?: string;
   @IsOptional() @IsString() reservaId?: string;
   @IsOptional() @IsString() clienteId?: string;
 }

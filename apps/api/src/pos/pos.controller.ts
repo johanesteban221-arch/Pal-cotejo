@@ -11,6 +11,11 @@ import { Roles } from "../auth/roles.decorator";
 export class PosController {
   constructor(private readonly pos: PosService) {}
 
+  @Get("mesas")
+  mesas() {
+    return this.pos.listarMesas();
+  }
+
   // ── Catálogo ──
   @Get("productos")
   listarProductos(@Query("todos") todos?: string) {

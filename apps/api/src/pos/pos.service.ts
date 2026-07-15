@@ -1,4 +1,4 @@
-import { BadRequestException, ForbiddenException, Injectable, NotFoundException } from "@nestjs/common";
+import { BadRequestException, ConflictException, ForbiddenException, Injectable, NotFoundException } from "@nestjs/common";
 import { PrismaService } from "../prisma/prisma.service";
 import { AbrirCuentaDto, ActualizarProductoDto, AgregarItemDto, CrearProductoDto } from "./dto";
 
@@ -25,12 +25,37 @@ export class PosService {
   }
 
   // ── Cuentas (consumos) ──
+  // Mesas activas del catálogo (para abrir cuentas por mesa formal).
+  listarMesas() {
+    return this.prisma.mesa.findMany({
+      where: { activa: true },
+      select: { id: true, nombre: true, capacidad: true },
+      orderBy: { nombre: "asc" },
+    });
+  }
+
   async abrirCuenta(dto: AbrirCuentaDto) {
-    if (!dto.mesa && !dto.reservaId && !dto.clienteId) {
+    if (!dto.mesa && !dto.mesaId && !dto.reservaId && !dto.clienteId) {
       throw new BadRequestException("Indica al menos una mesa, reserva o cliente");
     }
+    let mesaTexto = dto.mesa;
+    if (dto.mesaId) {
+      const mesa = await this.prisma.mesa.findUnique({
+        where: { id: dto.mesaId },
+        select: { id: true, nombre: true, activa: true },
+      });
+      if (!mesa) throw new NotFoundException("Mesa no encontrada");
+      if (!mesa.activa) throw new BadRequestException("La mesa no está activa");
+      // Regla: una sola cuenta ABIERTA por mesa formal.
+      const abierta = await this.prisma.cuenta.findFirst({
+        where: { mesaId: dto.mesaId, estado: "ABIERTA" },
+        select: { id: true },
+      });
+      if (abierta) throw new ConflictException("La mesa ya tiene una cuenta abierta");
+      mesaTexto = mesa.nombre; // snapshot para recibo/etiquetas que leen cuenta.mesa
+    }
     return this.prisma.cuenta.create({
-      data: { mesa: dto.mesa, reservaId: dto.reservaId, clienteId: dto.clienteId },
+      data: { mesa: mesaTexto, mesaId: dto.mesaId, reservaId: dto.reservaId, clienteId: dto.clienteId },
     });
   }
 
