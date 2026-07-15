@@ -1,4 +1,4 @@
-import { authHeaders, NoAutorizado } from "./auth";
+import { authHeaders, NoAutorizado, Rol } from "./auth";
 
 const API = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001";
 
@@ -342,6 +342,23 @@ export const crearRecurrente = (r: Record<string, unknown>) => send("POST", "/ap
 export const eliminarRecurrente = (id: string) => send("DELETE", `/api/recurrentes/${id}`);
 export const generarRecurrente = (id: string, cantidad = 4) =>
   send<{ creadas: number; omitidas: number; total: number }>("POST", `/api/recurrentes/${id}/generar?cantidad=${cantidad}`);
+
+// ── Usuarios (gestión staff, solo ADMIN) ──
+export interface UsuarioStaffRow {
+  id: string;
+  nombre: string;
+  email: string;
+  rol: Rol;
+  activo: boolean;
+  creadoEn: string;
+}
+export const getUsuarios = () => getJSON<UsuarioStaffRow[]>("/api/admin/usuarios");
+export const crearUsuario = (data: Record<string, unknown>) =>
+  sendJSON<UsuarioStaffRow>("/api/admin/usuarios", "POST", data);
+export const actualizarUsuario = (id: string, data: Record<string, unknown>) =>
+  sendJSON<UsuarioStaffRow>(`/api/admin/usuarios/${id}`, "PATCH", data);
+export const cambiarPasswordUsuario = (id: string, password: string) =>
+  sendJSON<{ ok: true }>(`/api/admin/usuarios/${id}/password`, "PATCH", { password });
 
 export function formatoCOP(valor: number): string {
   return new Intl.NumberFormat("es-CO", {

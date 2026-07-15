@@ -3,11 +3,13 @@ const API = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001";
 const TOKEN_KEY = "pal_cotejo_token";
 const USER_KEY = "pal_cotejo_user";
 
+export type Rol = "ADMIN" | "SUPERVISOR" | "CAJA";
+
 export interface StaffUser {
   id: string;
   nombre: string;
   email: string;
-  rol: "ADMIN" | "SUPERVISOR" | "CAJA";
+  rol: Rol;
 }
 
 export function getToken(): string | null {
@@ -44,6 +46,14 @@ export async function login(email: string, password: string): Promise<StaffUser>
     body: JSON.stringify({ email, password }),
   });
   if (!res.ok) {
+    // Rate limiting (429): mostrar el mensaje del throttler, no el genérico.
+    if (res.status === 429) {
+      const body = await res.json().catch(() => ({}));
+      throw new Error(
+        (body as { message?: string }).message ||
+          "Demasiados intentos de inicio de sesión. Espera un momento e intenta de nuevo.",
+      );
+    }
     const msg = res.status === 401 ? "Correo o contraseña incorrectos" : "Error al iniciar sesión";
     throw new Error(msg);
   }

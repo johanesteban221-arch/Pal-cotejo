@@ -3,9 +3,15 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { getToken, getUser, logout, StaffUser } from "../../lib/auth";
+import { getToken, getUser, logout, Rol, StaffUser } from "../../lib/auth";
 
-const ITEMS = [
+type MenuLink = { href: string; icon: string; label: string; roles?: Rol[] };
+type MenuSection = { seccion: string };
+type MenuEntry = MenuSection | MenuLink;
+
+// `roles` ausente = visible para todos los roles;
+// `roles` presente = visible solo si el rol del usuario está en la lista.
+const ITEMS: MenuEntry[] = [
   { seccion: "Principal" },
   { href: "/admin", icon: "📊", label: "Dashboard" },
   { href: "/admin/reservas", icon: "📋", label: "Reservas" },
@@ -13,11 +19,20 @@ const ITEMS = [
   { href: "/admin/bar", icon: "🍺", label: "Sport bar" },
   { seccion: "Gestión" },
   { href: "/admin/clientes", icon: "👥", label: "Clientes" },
-  { href: "/admin/productos", icon: "🍔", label: "Productos", soloAdmin: true },
-  { href: "/admin/inventario", icon: "📦", label: "Inventario", soloAdmin: true },
-  { href: "/admin/tarifas", icon: "💰", label: "Tarifas", soloAdmin: true },
-  { href: "/admin/bloqueos", icon: "🔒", label: "Bloqueos", soloAdmin: true },
+  { href: "/admin/productos", icon: "🍔", label: "Productos", roles: ["ADMIN"] },
+  { href: "/admin/inventario", icon: "📦", label: "Inventario", roles: ["ADMIN"] },
+  { href: "/admin/tarifas", icon: "💰", label: "Tarifas", roles: ["ADMIN"] },
+  { href: "/admin/bloqueos", icon: "🔒", label: "Bloqueos", roles: ["ADMIN", "SUPERVISOR"] },
 ];
+
+// Sección "Configuración" (solo ADMIN). Lista para colgar más sub-pantallas.
+const CONFIG_ITEMS: MenuLink[] = [
+  { href: "/admin/configuracion/usuarios", icon: "👤", label: "Usuarios" },
+];
+
+function puedeVer(rol: Rol | undefined, roles?: Rol[]) {
+  return !roles || (rol != null && roles.includes(rol));
+}
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
   const path = usePathname();
@@ -60,10 +75,10 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
             <div key={i} className="sidebar-section">
               {it.seccion}
             </div>
-          ) : it.soloAdmin && usuario?.rol !== "ADMIN" ? null : (
+          ) : !puedeVer(usuario?.rol, it.roles) ? null : (
             <Link
               key={i}
-              href={it.href!}
+              href={it.href}
               className={`sidebar-item ${path === it.href ? "active" : ""}`}
             >
               <span className="sidebar-icon">{it.icon}</span>
@@ -71,6 +86,24 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
             </Link>
           ),
         )}
+
+        {/* Configuración — solo ADMIN (se oculta también el encabezado) */}
+        {usuario?.rol === "ADMIN" && (
+          <>
+            <div className="sidebar-section">Configuración</div>
+            {CONFIG_ITEMS.map((it) => (
+              <Link
+                key={it.href}
+                href={it.href}
+                className={`sidebar-item ${path === it.href ? "active" : ""}`}
+              >
+                <span className="sidebar-icon">{it.icon}</span>
+                {it.label}
+              </Link>
+            ))}
+          </>
+        )}
+
         <div className="sidebar-section">Sistema</div>
         <Link href="/" className="sidebar-item">
           <span className="sidebar-icon">↩</span>Ver sitio
