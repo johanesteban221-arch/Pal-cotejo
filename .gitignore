@@ -33,3 +33,4 @@ Thumbs.db
 
 # Docker volumes locales
 .docker-data/
+apps/web/tsconfig.tsbuildinfo
