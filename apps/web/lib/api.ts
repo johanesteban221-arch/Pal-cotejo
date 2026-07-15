@@ -388,6 +388,14 @@ export interface EstadoTarifaResult {
 }
 export const cambiarEstadoTarifa = (id: string, activa: boolean, confirmar?: boolean) =>
   sendJSON<EstadoTarifaResult>(`/api/admin/tarifas/${id}/estado`, "PATCH", { activa, confirmar });
+export const crearTarifa = (data: {
+  canchaId: string;
+  diaSemana: number | null;
+  horaInicio: string;
+  horaFin: string;
+  precio: number;
+  tipo: "PICO" | "VALLE";
+}) => sendJSON<TarifaAdmin>("/api/admin/tarifas", "POST", data);
 
 export function formatoCOP(valor: number): string {
   return new Intl.NumberFormat("es-CO", {

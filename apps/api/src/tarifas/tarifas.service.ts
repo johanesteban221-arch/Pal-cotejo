@@ -1,6 +1,7 @@
-import { Injectable, NotFoundException } from "@nestjs/common";
+import { BadRequestException, ConflictException, Injectable, NotFoundException } from "@nestjs/common";
 import { PrismaService } from "../prisma/prisma.service";
-import { franjasSinCobertura } from "../disponibilidad/pricing.util";
+import { aMinutos, franjasSinCobertura, hayConflicto } from "../disponibilidad/pricing.util";
+import { CrearTarifaDto } from "./dto";
 
 // Campos a devolver (incluye el nombre de la cancha asociada).
 const SELECT = {
@@ -26,6 +27,42 @@ export class TarifasService {
     return this.prisma.tarifa.findMany({
       select: SELECT,
       orderBy: [{ cancha: { nombre: "asc" } }, { diaSemana: "asc" }, { horaInicio: "asc" }],
+    });
+  }
+
+  // FASE C: crea una tarifa validando cancha, orden horario y solapamiento.
+  async crear(dto: CrearTarifaDto) {
+    const cancha = await this.prisma.cancha.findUnique({
+      where: { id: dto.canchaId },
+      select: { id: true },
+    });
+    if (!cancha) throw new NotFoundException("Cancha no encontrada");
+    if (aMinutos(dto.horaInicio) >= aMinutos(dto.horaFin)) {
+      throw new BadRequestException("La hora de inicio debe ser anterior a la de fin");
+    }
+    const diaSemana = dto.diaSemana ?? null;
+
+    // Solo contra tarifas ACTIVAS (las inactivas no participan en la resolución).
+    const activas = await this.prisma.tarifa.findMany({
+      where: { canchaId: dto.canchaId, activa: true },
+      select: { diaSemana: true, horaInicio: true, horaFin: true },
+    });
+    const nueva = { diaSemana, horaInicio: dto.horaInicio, horaFin: dto.horaFin };
+    if (hayConflicto(nueva, activas)) {
+      throw new ConflictException("Se solaparía con una tarifa existente del mismo tipo de día");
+    }
+
+    return this.prisma.tarifa.create({
+      data: {
+        canchaId: dto.canchaId,
+        diaSemana,
+        horaInicio: dto.horaInicio,
+        horaFin: dto.horaFin,
+        precio: dto.precio,
+        tipo: dto.tipo,
+        activa: true,
+      },
+      select: SELECT,
     });
   }
 

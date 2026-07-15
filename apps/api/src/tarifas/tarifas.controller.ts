@@ -1,6 +1,6 @@
-import { Body, Controller, Get, Param, Patch, UseGuards } from "@nestjs/common";
+import { Body, Controller, Get, Param, Patch, Post, UseGuards } from "@nestjs/common";
 import { TarifasService } from "./tarifas.service";
-import { ActualizarPrecioDto, CambiarEstadoDto } from "./dto";
+import { ActualizarPrecioDto, CambiarEstadoDto, CrearTarifaDto } from "./dto";
 import { JwtAuthGuard } from "../auth/jwt-auth.guard";
 import { RolesGuard } from "../auth/roles.guard";
 import { Roles } from "../auth/roles.decorator";
@@ -11,6 +11,11 @@ import { Roles } from "../auth/roles.decorator";
 @Controller("admin/tarifas")
 export class TarifasController {
   constructor(private readonly tarifas: TarifasService) {}
+
+  @Post()
+  crear(@Body() dto: CrearTarifaDto) {
+    return this.tarifas.crear(dto);
+  }
 
   @Get()
   listar() {

@@ -2,7 +2,8 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { TarifaAdmin, getTarifas, actualizarTarifa, cambiarEstadoTarifa, formatoCOP } from "../../../lib/api";
+import { Cancha, TarifaAdmin, getCanchas, getTarifas, actualizarTarifa, cambiarEstadoTarifa, formatoCOP } from "../../../lib/api";
+import NuevaTarifaModal from "./NuevaTarifaModal";
 import { NoAutorizado, logout } from "../../../lib/auth";
 
 const DIAS = ["Dom", "Lun", "Mar", "Mié", "Jue", "Vie", "Sáb"];
@@ -16,6 +17,8 @@ export default function TarifasAdmin() {
   const [valor, setValor] = useState("");
   const [guardando, setGuardando] = useState(false);
   const [procesando, setProcesando] = useState(false);
+  const [canchas, setCanchas] = useState<Cancha[]>([]);
+  const [modalNuevo, setModalNuevo] = useState(false);
 
   const onErr = (e: unknown) => {
     if (e instanceof NoAutorizado) {
@@ -35,7 +38,9 @@ export default function TarifasAdmin() {
   }
 
   useEffect(() => {
-    cargar(); // eslint-disable-next-line react-hooks/exhaustive-deps
+    cargar();
+    getCanchas().then(setCanchas).catch(onErr);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   function abrirEdicion(t: TarifaAdmin) {
@@ -92,6 +97,13 @@ export default function TarifasAdmin() {
     <>
       <div className="admin-header">
         <div className="admin-title">Configuración de tarifas</div>
+        <button
+          className="btn-gold"
+          style={{ fontSize: 13, padding: "10px 16px" }}
+          onClick={() => setModalNuevo(true)}
+        >
+          ＋ Nueva tarifa
+        </button>
       </div>
 
       {msg && (
@@ -216,6 +228,18 @@ export default function TarifasAdmin() {
           </tbody>
         </table>
       </div>
+
+      {modalNuevo && (
+        <NuevaTarifaModal
+          canchas={canchas}
+          onClose={() => setModalNuevo(false)}
+          onSaved={() => {
+            cargar();
+            aviso("✓ Tarifa creada.");
+          }}
+          onErr={onErr}
+        />
+      )}
     </>
   );
 }
