@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { TarifaAdmin, getTarifas, actualizarTarifa, formatoCOP } from "../../../lib/api";
+import { TarifaAdmin, getTarifas, actualizarTarifa, cambiarEstadoTarifa, formatoCOP } from "../../../lib/api";
 import { NoAutorizado, logout } from "../../../lib/auth";
 
 const DIAS = ["Dom", "Lun", "Mar", "Mié", "Jue", "Vie", "Sáb"];
@@ -15,6 +15,7 @@ export default function TarifasAdmin() {
   const [editId, setEditId] = useState<string | null>(null);
   const [valor, setValor] = useState("");
   const [guardando, setGuardando] = useState(false);
+  const [procesando, setProcesando] = useState(false);
 
   const onErr = (e: unknown) => {
     if (e instanceof NoAutorizado) {
@@ -59,6 +60,32 @@ export default function TarifasAdmin() {
       })
       .catch(onErr)
       .finally(() => setGuardando(false));
+  }
+
+  function aviso(t: string) {
+    setMsg(t);
+    setTimeout(() => setMsg(""), 3500);
+  }
+
+  function toggleEstado(t: TarifaAdmin) {
+    if (procesando) return;
+    setProcesando(true);
+    cambiarEstadoTarifa(t.id, !t.activa)
+      .then((r) => {
+        if (r.requiereConfirmacion) {
+          if (window.confirm(`${r.mensaje}\n\n¿Desactivar de todos modos?`)) {
+            return cambiarEstadoTarifa(t.id, false, true).then(() => {
+              cargar();
+              aviso("✓ Tarifa desactivada.");
+            });
+          }
+          return;
+        }
+        cargar();
+        aviso(t.activa ? "✓ Tarifa desactivada." : "✓ Tarifa activada.");
+      })
+      .catch(onErr)
+      .finally(() => setProcesando(false));
   }
 
   return (
@@ -151,13 +178,23 @@ export default function TarifasAdmin() {
                       </button>
                     </div>
                   ) : (
-                    <button
-                      className="btn-outline"
-                      style={{ fontSize: 12, padding: "6px 12px" }}
-                      onClick={() => abrirEdicion(t)}
-                    >
-                      Editar precio
-                    </button>
+                    <div style={{ display: "flex", gap: 6, justifyContent: "flex-end" }}>
+                      <button
+                        className="btn-outline"
+                        style={{ fontSize: 12, padding: "6px 12px" }}
+                        onClick={() => abrirEdicion(t)}
+                      >
+                        Editar precio
+                      </button>
+                      <button
+                        className={t.activa ? "btn-outline" : "btn-gold"}
+                        style={{ fontSize: 12, padding: "6px 12px" }}
+                        disabled={procesando}
+                        onClick={() => toggleEstado(t)}
+                      >
+                        {t.activa ? "Desactivar" : "Activar"}
+                      </button>
+                    </div>
                   )}
                 </td>
               </tr>

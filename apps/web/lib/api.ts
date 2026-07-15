@@ -375,6 +375,19 @@ export interface TarifaAdmin {
 export const getTarifas = () => getJSON<TarifaAdmin[]>("/api/admin/tarifas");
 export const actualizarTarifa = (id: string, data: { precio: number }) =>
   sendJSON<TarifaAdmin>(`/api/admin/tarifas/${id}`, "PATCH", data);
+export interface HuecoDia {
+  dia: number;
+  franjas: string[];
+}
+export interface EstadoTarifaResult {
+  aplicado: boolean;
+  requiereConfirmacion?: boolean;
+  mensaje?: string;
+  huecos?: HuecoDia[];
+  tarifa?: TarifaAdmin;
+}
+export const cambiarEstadoTarifa = (id: string, activa: boolean, confirmar?: boolean) =>
+  sendJSON<EstadoTarifaResult>(`/api/admin/tarifas/${id}/estado`, "PATCH", { activa, confirmar });
 
 export function formatoCOP(valor: number): string {
   return new Intl.NumberFormat("es-CO", {

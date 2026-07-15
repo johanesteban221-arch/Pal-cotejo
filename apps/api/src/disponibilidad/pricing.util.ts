@@ -1,5 +1,9 @@
 import { TipoTarifa } from "@prisma/client";
 
+// Duración de cada slot en minutos (1 hora). Fuente única compartida por la
+// grilla de disponibilidad y el chequeo de cobertura de tarifas.
+export const SLOT_MIN = 60;
+
 export interface TarifaLike {
   diaSemana: number | null;
   horaInicio: string; // "HH:mm"
@@ -41,4 +45,29 @@ export function resolverTarifa(
   if (candidatas.length === 0) return null;
   const t = candidatas[0];
   return { precio: t.precio, tipo: t.tipo };
+}
+
+/**
+ * Franjas del rango operativo de un día que NO quedan cubiertas por ninguna de
+ * las tarifas dadas (huecos internos). Usa el mismo SLOT_MIN y resolverTarifa que
+ * la grilla real. Si no hay tarifas aplicables al día, devuelve [] (ese caso —
+ * "el día pierde todo"— lo maneja el llamador).
+ */
+export function franjasSinCobertura(
+  tarifas: TarifaLike[],
+  diaSemana: number,
+): { horaInicio: string; horaFin: string }[] {
+  const tarifasDia = tarifas.filter((t) => t.diaSemana === null || t.diaSemana === diaSemana);
+  if (tarifasDia.length === 0) return [];
+  const apertura = Math.min(...tarifasDia.map((t) => aMinutos(t.horaInicio)));
+  const cierre = Math.max(...tarifasDia.map((t) => aMinutos(t.horaFin)));
+  const huecos: { horaInicio: string; horaFin: string }[] = [];
+  for (let m = apertura; m + SLOT_MIN <= cierre; m += SLOT_MIN) {
+    const ini = m;
+    const fin = m + SLOT_MIN;
+    if (!resolverTarifa(tarifasDia, diaSemana, ini, fin)) {
+      huecos.push({ horaInicio: aHHMM(ini), horaFin: aHHMM(fin) });
+    }
+  }
+  return huecos;
 }

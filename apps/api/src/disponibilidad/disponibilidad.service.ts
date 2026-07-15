@@ -1,6 +1,6 @@
 import { Injectable, NotFoundException } from "@nestjs/common";
 import { PrismaService } from "../prisma/prisma.service";
-import { aHHMM, aMinutos, resolverTarifa } from "./pricing.util";
+import { aHHMM, aMinutos, resolverTarifa, SLOT_MIN } from "./pricing.util";
 
 export interface Slot {
   horaInicio: string; // "HH:mm"
@@ -13,9 +13,6 @@ export interface Slot {
 
 @Injectable()
 export class DisponibilidadService {
-  // Duracion de cada slot en minutos (1 hora). Configurable a futuro.
-  private readonly SLOT_MIN = 60;
-
   constructor(private prisma: PrismaService) {}
 
   /**
@@ -58,9 +55,9 @@ export class DisponibilidadService {
     });
 
     const slots: Slot[] = [];
-    for (let m = aperturaMin; m + this.SLOT_MIN <= cierreMin; m += this.SLOT_MIN) {
+    for (let m = aperturaMin; m + SLOT_MIN <= cierreMin; m += SLOT_MIN) {
       const ini = m;
-      const fin = m + this.SLOT_MIN;
+      const fin = m + SLOT_MIN;
       const horaInicio = aHHMM(ini);
       const horaFin = aHHMM(fin);
 

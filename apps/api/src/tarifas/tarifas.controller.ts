@@ -1,6 +1,6 @@
 import { Body, Controller, Get, Param, Patch, UseGuards } from "@nestjs/common";
 import { TarifasService } from "./tarifas.service";
-import { ActualizarPrecioDto } from "./dto";
+import { ActualizarPrecioDto, CambiarEstadoDto } from "./dto";
 import { JwtAuthGuard } from "../auth/jwt-auth.guard";
 import { RolesGuard } from "../auth/roles.guard";
 import { Roles } from "../auth/roles.decorator";
@@ -20,5 +20,10 @@ export class TarifasController {
   @Patch(":id")
   actualizarPrecio(@Param("id") id: string, @Body() dto: ActualizarPrecioDto) {
     return this.tarifas.actualizarPrecio(id, dto.precio);
+  }
+
+  @Patch(":id/estado")
+  cambiarEstado(@Param("id") id: string, @Body() dto: CambiarEstadoDto) {
+    return this.tarifas.cambiarEstado(id, dto.activa, dto.confirmar);
   }
 }
