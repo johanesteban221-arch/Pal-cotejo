@@ -360,6 +360,22 @@ export const actualizarUsuario = (id: string, data: Record<string, unknown>) =>
 export const cambiarPasswordUsuario = (id: string, password: string) =>
   sendJSON<{ ok: true }>(`/api/admin/usuarios/${id}/password`, "PATCH", { password });
 
+// ── Tarifas (admin, solo ADMIN) ──
+export interface TarifaAdmin {
+  id: string;
+  canchaId: string;
+  diaSemana: number | null;
+  horaInicio: string;
+  horaFin: string;
+  precio: number;
+  tipo: "PICO" | "VALLE";
+  activa: boolean;
+  cancha: { nombre: string };
+}
+export const getTarifas = () => getJSON<TarifaAdmin[]>("/api/admin/tarifas");
+export const actualizarTarifa = (id: string, data: { precio: number }) =>
+  sendJSON<TarifaAdmin>(`/api/admin/tarifas/${id}`, "PATCH", data);
+
 export function formatoCOP(valor: number): string {
   return new Intl.NumberFormat("es-CO", {
     style: "currency",
