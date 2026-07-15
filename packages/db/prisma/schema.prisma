@@ -323,6 +323,11 @@ enum TipoMovimiento {
   AJUSTE // corrección manual
 }
 
+enum EstadoSesionCaja {
+  ABIERTA
+  CERRADA
+}
+
 /// Catálogo de productos del bar (bebidas, comidas).
 /// Presentaciones (1/2 petaco, petaco, six) son productos con `unidades` > 1 que
 /// comparten el stock de un producto base (`stockBaseId`) medido en unidades.
@@ -369,16 +374,18 @@ model Cuenta {
   mesaId     String? // FK opcional a Mesa (mesa formal del catalogo); null = walk-in/barra
   reservaId  String? // ligada a una reserva de cancha (opcional)
   clienteId  String? // ligada a un cliente registrado (opcional)
+  sesionCajaId String? // sesion de caja abierta al cobrar (null = venta pre-caja)
   estado     EstadoCuenta @default(ABIERTA)
   total      Int          @default(0)
   metodoPago String? // EFECTIVO, TARJETA, OTRO (al cobrar)
   abiertaEn  DateTime     @default(now())
   cerradaEn  DateTime?
 
-  reserva Reserva?     @relation(fields: [reservaId], references: [id])
-  cliente Cliente?     @relation(fields: [clienteId], references: [id])
-  mesaRef Mesa?        @relation(fields: [mesaId], references: [id])
-  items   ItemCuenta[]
+  reserva    Reserva?     @relation(fields: [reservaId], references: [id])
+  cliente    Cliente?     @relation(fields: [clienteId], references: [id])
+  mesaRef    Mesa?        @relation(fields: [mesaId], references: [id])
+  sesionCaja SesionCaja?  @relation(fields: [sesionCajaId], references: [id])
+  items      ItemCuenta[]
 
   @@index([estado])
   @@index([abiertaEn])
@@ -399,4 +406,24 @@ model ItemCuenta {
 
   @@index([cuentaId])
   @@map("items_cuenta")
+}
+
+/// Sesion/turno de caja: fondo inicial, ventas de la sesion y arqueo al cerrar.
+model SesionCaja {
+  id                String           @id @default(cuid())
+  usuarioAperturaId String // quien abrio la caja
+  abiertaEn         DateTime         @default(now())
+  montoInicial      Int // fondo inicial (COP)
+  estado            EstadoSesionCaja @default(ABIERTA)
+  cerradaEn         DateTime?
+  usuarioCierreId   String? // quien cerro
+  montoEsperado     Int? // efectivo esperado, congelado al cerrar
+  montoContado      Int? // efectivo fisico contado
+  diferencia        Int? // contado - esperado, congelado al cerrar
+  nota              String? // motivo del descuadre
+
+  cuentas Cuenta[]
+
+  @@index([estado])
+  @@map("sesiones_caja")
 }
