@@ -263,6 +263,7 @@ model Mesa {
   creadoEn  DateTime @default(now())
 
   reservasMesa ReservaMesa[]
+  cuentas      Cuenta[]
 
   @@map("mesas")
 }
@@ -365,6 +366,7 @@ model MovimientoInventario {
 model Cuenta {
   id         String       @id @default(cuid())
   mesa       String? // etiqueta libre: "Mesa 3", "Barra", o nombre del cliente walk-in
+  mesaId     String? // FK opcional a Mesa (mesa formal del catalogo); null = walk-in/barra
   reservaId  String? // ligada a una reserva de cancha (opcional)
   clienteId  String? // ligada a un cliente registrado (opcional)
   estado     EstadoCuenta @default(ABIERTA)
@@ -375,6 +377,7 @@ model Cuenta {
 
   reserva Reserva?     @relation(fields: [reservaId], references: [id])
   cliente Cliente?     @relation(fields: [clienteId], references: [id])
+  mesaRef Mesa?        @relation(fields: [mesaId], references: [id])
   items   ItemCuenta[]
 
   @@index([estado])
