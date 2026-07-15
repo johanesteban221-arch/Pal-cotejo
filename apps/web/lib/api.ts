@@ -396,6 +396,11 @@ export const crearTarifa = (data: {
   precio: number;
   tipo: "PICO" | "VALLE";
 }) => sendJSON<TarifaAdmin>("/api/admin/tarifas", "POST", data);
+export const editarFranjaTarifa = (
+  id: string,
+  data: { horaInicio?: string; horaFin?: string; diaSemana?: number | null },
+  confirmar?: boolean,
+) => sendJSON<EstadoTarifaResult>(`/api/admin/tarifas/${id}/franja`, "PATCH", { ...data, confirmar });
 
 export function formatoCOP(valor: number): string {
   return new Intl.NumberFormat("es-CO", {

@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Cancha, TarifaAdmin, getCanchas, getTarifas, actualizarTarifa, cambiarEstadoTarifa, formatoCOP } from "../../../lib/api";
 import NuevaTarifaModal from "./NuevaTarifaModal";
+import EditarFranjaModal from "./EditarFranjaModal";
 import { NoAutorizado, logout } from "../../../lib/auth";
 
 const DIAS = ["Dom", "Lun", "Mar", "Mié", "Jue", "Vie", "Sáb"];
@@ -19,6 +20,7 @@ export default function TarifasAdmin() {
   const [procesando, setProcesando] = useState(false);
   const [canchas, setCanchas] = useState<Cancha[]>([]);
   const [modalNuevo, setModalNuevo] = useState(false);
+  const [franjaSel, setFranjaSel] = useState<TarifaAdmin | null>(null);
 
   const onErr = (e: unknown) => {
     if (e instanceof NoAutorizado) {
@@ -199,6 +201,13 @@ export default function TarifasAdmin() {
                         Editar precio
                       </button>
                       <button
+                        className="btn-outline"
+                        style={{ fontSize: 12, padding: "6px 12px" }}
+                        onClick={() => setFranjaSel(t)}
+                      >
+                        Editar franja
+                      </button>
+                      <button
                         className={t.activa ? "btn-outline" : "btn-gold"}
                         style={{ fontSize: 12, padding: "6px 12px" }}
                         disabled={procesando}
@@ -228,6 +237,18 @@ export default function TarifasAdmin() {
           </tbody>
         </table>
       </div>
+
+      {franjaSel && (
+        <EditarFranjaModal
+          tarifa={franjaSel}
+          onClose={() => setFranjaSel(null)}
+          onSaved={() => {
+            cargar();
+            aviso("✓ Franja actualizada.");
+          }}
+          onErr={onErr}
+        />
+      )}
 
       {modalNuevo && (
         <NuevaTarifaModal

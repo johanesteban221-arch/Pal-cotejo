@@ -1,7 +1,7 @@
 import { BadRequestException, ConflictException, Injectable, NotFoundException } from "@nestjs/common";
 import { PrismaService } from "../prisma/prisma.service";
 import { aMinutos, franjasSinCobertura, hayConflicto } from "../disponibilidad/pricing.util";
-import { CrearTarifaDto } from "./dto";
+import { CrearTarifaDto, EditarFranjaDto } from "./dto";
 
 // Campos a devolver (incluye el nombre de la cancha asociada).
 const SELECT = {
@@ -141,5 +141,90 @@ export class TarifasService {
       select: SELECT,
     });
     return { aplicado: true, tarifa };
+  }
+
+  /**
+   * FASE C: edita franja/día. Solapamiento BLOQUEA (409, antes que nada);
+   * si el cambio deja un hueco interno de cobertura, AVISA (requiereConfirmacion)
+   * como en cambiarEstado, salvo confirmar:true. Solo toca horario/día.
+   */
+  async editarFranja(id: string, dto: EditarFranjaDto) {
+    const t = await this.prisma.tarifa.findUnique({
+      where: { id },
+      select: { id: true, canchaId: true, diaSemana: true, horaInicio: true, horaFin: true, activa: true },
+    });
+    if (!t) throw new NotFoundException("Tarifa no encontrada");
+
+    // Fusionar entrante con lo existente (diaSemana: null explícito vs omitido).
+    const horaInicio = dto.horaInicio ?? t.horaInicio;
+    const horaFin = dto.horaFin ?? t.horaFin;
+    const diaSemana = dto.diaSemana !== undefined ? dto.diaSemana : t.diaSemana;
+
+    if (aMinutos(horaInicio) >= aMinutos(horaFin)) {
+      throw new BadRequestException("La hora de inicio debe ser anterior a la de fin");
+    }
+
+    // SOLAPAMIENTO (bloquea, se chequea ANTES que hueco). Excluye esta tarifa.
+    const otras = await this.prisma.tarifa.findMany({
+      where: { canchaId: t.canchaId, activa: true, id: { not: id } },
+      select: { diaSemana: true, horaInicio: true, horaFin: true },
+    });
+    const fusionada = { diaSemana, horaInicio, horaFin };
+    if (hayConflicto(fusionada, otras)) {
+      throw new ConflictException("Se solaparía con una tarifa existente del mismo tipo de día");
+    }
+
+    // HUECO (avisa): solo si la tarifa está activa (si no, no cambia cobertura).
+    if (!dto.confirmar && t.activa) {
+      const huecos = await this.huecosPostEdicion(t.canchaId, id, fusionada);
+      if (huecos.length > 0) {
+        const detalle = huecos.map((h) => `${DIAS[h.dia]} ${h.franjas.join(", ")}`).join("; ");
+        return {
+          aplicado: false,
+          requiereConfirmacion: true,
+          mensaje: `Este cambio dejará sin precio: ${detalle}.`,
+          huecos,
+        };
+      }
+    }
+
+    const tarifa = await this.prisma.tarifa.update({
+      where: { id },
+      data: { horaInicio, horaFin, diaSemana },
+      select: SELECT,
+    });
+    return { aplicado: true, tarifa };
+  }
+
+  /** Huecos internos (+ días que pierden toda su cobertura previa) que dejaría
+   *  reemplazar la franja de una tarifa ACTIVA por los valores fusionados. */
+  private async huecosPostEdicion(
+    canchaId: string,
+    tarifaId: string,
+    merged: { diaSemana: number | null; horaInicio: string; horaFin: string },
+  ) {
+    const activas = await this.prisma.tarifa.findMany({
+      where: { canchaId, activa: true },
+      select: { id: true, diaSemana: true, horaInicio: true, horaFin: true, precio: true, tipo: true },
+    });
+    const postEdit = activas.map((x) =>
+      x.id === tarifaId
+        ? { ...x, diaSemana: merged.diaSemana, horaInicio: merged.horaInicio, horaFin: merged.horaFin }
+        : x,
+    );
+    const huecos: { dia: number; franjas: string[] }[] = [];
+    for (let dia = 0; dia < 7; dia++) {
+      const tarifasDia = postEdit.filter((x) => x.diaSemana === null || x.diaSemana === dia);
+      if (tarifasDia.length === 0) {
+        const teniaAntes = activas.some((x) => x.diaSemana === null || x.diaSemana === dia);
+        if (teniaAntes) huecos.push({ dia, franjas: ["todo el día"] });
+        continue;
+      }
+      const gaps = franjasSinCobertura(postEdit, dia);
+      if (gaps.length > 0) {
+        huecos.push({ dia, franjas: gaps.map((g) => `${g.horaInicio}\u2013${g.horaFin}`) });
+      }
+    }
+    return huecos;
   }
 }

@@ -45,3 +45,26 @@ export class CrearTarifaDto {
   @IsEnum(TipoTarifa)
   tipo!: TipoTarifa;
 }
+
+export class EditarFranjaDto {
+  @IsOptional()
+  @IsString()
+  @Matches(HHMM, { message: "horaInicio debe tener formato HH:mm" })
+  horaInicio?: string;
+
+  @IsOptional()
+  @IsString()
+  @Matches(HHMM, { message: "horaFin debe tener formato HH:mm" })
+  horaFin?: string;
+
+  // null explícito = todos los días; omitido = sin cambio.
+  @IsOptional()
+  @IsInt()
+  @Min(0)
+  @Max(6)
+  diaSemana?: number | null;
+
+  @IsOptional()
+  @IsBoolean()
+  confirmar?: boolean;
+}
