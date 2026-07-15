@@ -1,3 +1,4 @@
+import { join } from "path";
 import { Module } from "@nestjs/common";
 import { ConfigModule } from "@nestjs/config";
 import { ScheduleModule } from "@nestjs/schedule";
@@ -20,6 +21,11 @@ import { envValidationSchema } from "./config/env.validation";
   imports: [
     ConfigModule.forRoot({
       isGlobal: true,
+      // Dev: el .env vive en la raiz del monorepo, pero `nest start` corre con
+      // cwd en apps/api. Cargamos ambos candidatos (apps/api/.env tiene prioridad
+      // si existe; si no, el .env de la raiz). En prod estos archivos no existen
+      // y las vars vienen del entorno del contenedor -> sin efecto.
+      envFilePath: [".env", join(process.cwd(), "..", "..", ".env")],
       validationSchema: envValidationSchema,
       validationOptions: { allowUnknown: true, abortEarly: false },
     }),
