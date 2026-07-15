@@ -1,53 +1,163 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { Cancha, getCanchas } from "../../../lib/api";
+import { Cancha, getCanchasAdmin, cambiarEstadoCancha } from "../../../lib/api";
 import { NoAutorizado, logout } from "../../../lib/auth";
+import RecursoModal from "./RecursoModal";
 
-export default function CanchasAdmin() {
+export default function RecursosAdmin() {
   const router = useRouter();
   const [canchas, setCanchas] = useState<Cancha[]>([]);
+  const [cargando, setCargando] = useState(true);
+  const [msg, setMsg] = useState("");
+  const [modal, setModal] = useState<{ recurso: Cancha | null } | null>(null);
+  const [procesando, setProcesando] = useState(false);
+
+  const onErr = (e: unknown) => {
+    if (e instanceof NoAutorizado) {
+      logout();
+      router.replace("/admin/login");
+    } else {
+      setMsg("⚠️ " + (e as Error).message);
+    }
+  };
+
+  function cargar() {
+    setCargando(true);
+    getCanchasAdmin()
+      .then(setCanchas)
+      .catch(onErr)
+      .finally(() => setCargando(false));
+  }
 
   useEffect(() => {
-    getCanchas()
-      .then(setCanchas)
-      .catch((e) => {
-        if (e instanceof NoAutorizado) {
-          logout();
-          router.replace("/admin/login");
+    cargar(); // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  function aviso(t: string) {
+    setMsg(t);
+    setTimeout(() => setMsg(""), 3500);
+  }
+
+  function toggle(c: Cancha) {
+    if (procesando) return;
+    setProcesando(true);
+    cambiarEstadoCancha(c.id, !c.activa)
+      .then((r) => {
+        if (r.requiereConfirmacion) {
+          if (window.confirm(`${r.mensaje}\n\n¿Desactivar de todos modos?`)) {
+            return cambiarEstadoCancha(c.id, false, true).then(() => {
+              cargar();
+              aviso("✓ Recurso desactivado.");
+            });
+          }
+          return;
         }
-      });
-  }, [router]);
+        cargar();
+        aviso(c.activa ? "✓ Recurso desactivado." : "✓ Recurso activado.");
+      })
+      .catch(onErr)
+      .finally(() => setProcesando(false));
+  }
 
   return (
     <>
       <div className="admin-header">
-        <div className="admin-title">Canchas y bloqueos</div>
-        <Link className="btn-gold" style={{ fontSize: 14, padding: "10px 20px" }} href="/admin/bloqueos">
-          + Bloquear horario
-        </Link>
+        <div className="admin-title">Recursos</div>
+        <button
+          className="btn-gold"
+          style={{ fontSize: 13, padding: "10px 16px" }}
+          onClick={() => setModal({ recurso: null })}
+        >
+          ＋ Nuevo recurso
+        </button>
       </div>
+
+      {msg && (
+        <div
+          className="admin-table-wrap"
+          style={{ padding: "12px 20px", marginBottom: 16, color: msg.startsWith("✓") ? "#4CAF50" : "var(--red-lt)" }}
+        >
+          {msg}
+        </div>
+      )}
+
       <div className="admin-table-wrap">
         <div className="admin-table-header">
-          <span className="admin-table-title">Estado de canchas</span>
+          <span className="admin-table-title">Recursos reservables</span>
         </div>
-        <div style={{ padding: 20, display: "grid", gridTemplateColumns: "repeat(auto-fill,minmax(240px,1fr))", gap: 16 }}>
-          {canchas.map((c) => (
-            <div key={c.id} style={{ border: "1px solid var(--border-g)", borderRadius: 10, padding: 20, background: "rgba(212,160,23,.04)" }}>
-              <div style={{ fontFamily: "var(--font-d)", fontSize: 18, color: "var(--cream)" }}>{c.nombre}</div>
-              <div style={{ fontSize: 12, color: "var(--muted)", marginBottom: 12 }}>{c.tipo} · Sintético</div>
-              <div style={{ fontSize: 13, color: "#4CAF50" }}>● Activa</div>
-              <div style={{ marginTop: 12, display: "flex", gap: 8 }}>
-                <Link className="btn-outline" style={{ fontSize: 12, padding: "6px 12px" }} href="/admin/bloqueos">Bloquear</Link>
-                <Link className="btn-gold" style={{ fontSize: 12, padding: "6px 12px" }} href="/admin/reservas">Reservar</Link>
-              </div>
-            </div>
-          ))}
-          {canchas.length === 0 && <div className="muted">Cargando canchas…</div>}
-        </div>
+        <table>
+          <thead>
+            <tr>
+              <th>Nombre</th>
+              <th>Tipo</th>
+              <th>Capacidad</th>
+              <th>Estado</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody>
+            {canchas.map((c) => (
+              <tr key={c.id} style={{ opacity: c.activa ? 1 : 0.5 }}>
+                <td style={{ color: "var(--cream)", fontFamily: "var(--font-d)" }}>{c.nombre}</td>
+                <td>{c.tipo || <span className="muted">Sin tipo</span>}</td>
+                <td>{c.capacidad != null ? c.capacidad : "—"}</td>
+                <td>
+                  <span className={`status-pill ${c.activa ? "pill-green" : "pill-red"}`}>
+                    {c.activa ? "Activo" : "Inactivo"}
+                  </span>
+                </td>
+                <td style={{ textAlign: "right" }}>
+                  <div style={{ display: "flex", gap: 6, justifyContent: "flex-end" }}>
+                    <button
+                      className="btn-outline"
+                      style={{ fontSize: 12, padding: "6px 12px" }}
+                      onClick={() => setModal({ recurso: c })}
+                    >
+                      Editar
+                    </button>
+                    <button
+                      className={c.activa ? "btn-outline" : "btn-gold"}
+                      style={{ fontSize: 12, padding: "6px 12px" }}
+                      disabled={procesando}
+                      onClick={() => toggle(c)}
+                    >
+                      {c.activa ? "Desactivar" : "Activar"}
+                    </button>
+                  </div>
+                </td>
+              </tr>
+            ))}
+            {cargando && (
+              <tr>
+                <td colSpan={5} className="muted" style={{ textAlign: "center" }}>
+                  Cargando recursos…
+                </td>
+              </tr>
+            )}
+            {!cargando && canchas.length === 0 && (
+              <tr>
+                <td colSpan={5} className="muted" style={{ textAlign: "center" }}>
+                  Aún no hay recursos. Crea el primero con “＋ Nuevo recurso”.
+                </td>
+              </tr>
+            )}
+          </tbody>
+        </table>
       </div>
+
+      {modal && (
+        <RecursoModal
+          recurso={modal.recurso}
+          onClose={() => setModal(null)}
+          onSaved={() => {
+            cargar();
+            aviso(modal.recurso ? "✓ Recurso actualizado." : "✓ Recurso creado.");
+          }}
+          onErr={onErr}
+        />
+      )}
     </>
   );
 }

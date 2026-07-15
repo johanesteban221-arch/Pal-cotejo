@@ -6,6 +6,10 @@ export interface Cancha {
   id: string;
   nombre: string;
   tipo?: string | null;
+  descripcion?: string | null;
+  capacidad?: number | null;
+  orden?: number | null;
+  activa?: boolean;
 }
 
 export interface Slot {
@@ -401,6 +405,22 @@ export const editarFranjaTarifa = (
   data: { horaInicio?: string; horaFin?: string; diaSemana?: number | null },
   confirmar?: boolean,
 ) => sendJSON<EstadoTarifaResult>(`/api/admin/tarifas/${id}/franja`, "PATCH", { ...data, confirmar });
+
+// ── Recursos (canchas, gestión admin) ──
+export interface EstadoCanchaResult {
+  aplicado: boolean;
+  requiereConfirmacion?: boolean;
+  reservasFuturas?: number;
+  mensaje?: string;
+  cancha?: Cancha;
+}
+export const getCanchasAdmin = () => getJSON<Cancha[]>("/api/admin/canchas");
+export const crearCancha = (data: Record<string, unknown>) =>
+  sendJSON<Cancha>("/api/admin/canchas", "POST", data);
+export const actualizarCancha = (id: string, data: Record<string, unknown>) =>
+  sendJSON<Cancha>(`/api/admin/canchas/${id}`, "PATCH", data);
+export const cambiarEstadoCancha = (id: string, activa: boolean, confirmar?: boolean) =>
+  sendJSON<EstadoCanchaResult>(`/api/admin/canchas/${id}/estado`, "PATCH", { activa, confirmar });
 
 export function formatoCOP(valor: number): string {
   return new Intl.NumberFormat("es-CO", {
