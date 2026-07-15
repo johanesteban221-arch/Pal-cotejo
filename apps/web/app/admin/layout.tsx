@@ -15,6 +15,7 @@ const ITEMS: MenuEntry[] = [
   { seccion: "Principal" },
   { href: "/admin", icon: "📊", label: "Dashboard" },
   { href: "/admin/reservas", icon: "📋", label: "Reservas" },
+  { href: "/admin/agenda", icon: "📅", label: "Agenda" },
   { href: "/admin/canchas", icon: "⚽", label: "Canchas" },
   { href: "/admin/bar", icon: "🍺", label: "Sport bar" },
   { seccion: "Gestión" },

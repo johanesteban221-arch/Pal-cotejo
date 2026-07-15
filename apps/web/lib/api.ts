@@ -422,6 +422,26 @@ export const actualizarCancha = (id: string, data: Record<string, unknown>) =>
 export const cambiarEstadoCancha = (id: string, activa: boolean, confirmar?: boolean) =>
   sendJSON<EstadoCanchaResult>(`/api/admin/canchas/${id}/estado`, "PATCH", { activa, confirmar });
 
+// ── Agenda (calendario por día) ──
+export interface AgendaRecurso { id: string; nombre: string; tipo: string | null; orden: number | null; }
+export interface AgendaReserva {
+  id: string; canchaId: string; horaInicio: string; horaFin: string;
+  estado: string; montoTotal: number; cliente: string;
+}
+export interface AgendaBloqueo {
+  id: string; bloqueoId: string; canchaId: string;
+  horaInicio: string; horaFin: string; motivo: string; nota: string | null;
+}
+export interface AgendaDia {
+  fecha: string;
+  recursos: AgendaRecurso[];
+  horaApertura: string | null;
+  horaCierre: string | null;
+  reservas: AgendaReserva[];
+  bloqueos: AgendaBloqueo[];
+}
+export const getAgendaDia = (fecha: string) => getJSON<AgendaDia>(`/api/agenda/dia?fecha=${fecha}`);
+
 export function formatoCOP(valor: number): string {
   return new Intl.NumberFormat("es-CO", {
     style: "currency",
