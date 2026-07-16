@@ -8,9 +8,11 @@ import {
   Mesa,
   CajaActual,
   CajaCierre,
+  MetodoCobro,
   ReporteBar,
   getProductos,
   getMesas,
+  getMetodosCobroPos,
   getCuentasAbiertas,
   getCuenta,
   abrirCuenta,
@@ -37,6 +39,7 @@ export default function BarPOS() {
   const router = useRouter();
   const [productos, setProductos] = useState<Producto[]>([]);
   const [mesas, setMesas] = useState<Mesa[]>([]);
+  const [metodos, setMetodos] = useState<MetodoCobro[]>([]);
   const [caja, setCaja] = useState<CajaActual | null>(null);
   const [cajaCargada, setCajaCargada] = useState(false);
   const [modalAbrir, setModalAbrir] = useState(false);
@@ -73,6 +76,7 @@ export default function BarPOS() {
   useEffect(() => {
     getProductos().then(setProductos).catch(onErr);
     getMesas().then(setMesas).catch(onErr);
+    getMetodosCobroPos().then(setMetodos).catch(onErr);
     recargar(); // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -104,19 +108,19 @@ export default function BarPOS() {
     if (!sel) return;
     quitarItem(itemId).then((c) => { setSel(c); recargar(); }).catch(onErr);
   }
-  function cobrar(metodo: string) {
+  function cobrar(codigo: string, nombre: string) {
     if (!sel) return;
     if (!caja) { aviso("Abre la caja para cobrar."); return; }
     const datos = {
       mesa: sel.mesa,
       total: sel.total,
-      metodo,
+      metodo: nombre, // nombre amigable para el recibo/toast (lo ve el cliente)
       codigo: sel.id.slice(-6).toUpperCase(),
       fecha: new Date().toLocaleString("es-CO", { dateStyle: "short", timeStyle: "short" }),
       items: (sel.items || []).map((i) => ({ nombre: i.producto?.nombre || "Producto", cantidad: i.cantidad, subtotal: i.subtotal })),
     };
-    cobrarCuenta(sel.id, metodo)
-      .then(() => { setRecibo(datos); aviso(`✓ Cobrado ${formatoCOP(datos.total)} (${metodo})`); setSel(null); recargar(); })
+    cobrarCuenta(sel.id, codigo) // código canónico: lo valida y guarda el backend
+      .then(() => { setRecibo(datos); aviso(`✓ Cobrado ${formatoCOP(datos.total)} (${nombre})`); setSel(null); recargar(); })
       .catch(onErr);
   }
   function abrirCajaAction(montoInicial: number) {
@@ -325,9 +329,17 @@ export default function BarPOS() {
               {/* Cobrar */}
               <div className="form-label">Cobrar ({formatoCOP(sel.total)})</div>
               <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-                <button className="btn-gold" disabled={!sel.items?.length} onClick={() => cobrar("EFECTIVO")}>💵 Efectivo</button>
-                <button className="btn-gold" disabled={!sel.items?.length} onClick={() => cobrar("TARJETA")}>💳 Tarjeta</button>
-                <button className="btn-outline" disabled={!sel.items?.length} onClick={() => cobrar("OTRO")}>Otro</button>
+                {metodos.length === 0 ? (
+                  <span className="muted" style={{ fontSize: 13 }}>
+                    No hay métodos de pago activos. Configúralos en Configuración → Métodos de pago.
+                  </span>
+                ) : (
+                  metodos.map((m) => (
+                    <button key={m.id} className="btn-gold" disabled={!sel.items?.length} onClick={() => cobrar(m.codigo, m.nombre)}>
+                      {m.nombre}
+                    </button>
+                  ))
+                )}
                 <button className="btn-outline" style={{ color: "var(--red-lt)", borderColor: "rgba(192,57,43,.4)" }} onClick={anular}>Anular</button>
               </div>
             </div>

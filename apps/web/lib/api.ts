@@ -450,6 +450,8 @@ export const actualizarMetodoCobro = (id: string, data: Record<string, unknown>)
   sendJSON<MetodoCobro>(`/api/admin/metodos-cobro/${id}`, "PATCH", data);
 export const cambiarEstadoMetodoCobro = (id: string, activo: boolean) =>
   sendJSON<EstadoMetodoCobroResult>(`/api/admin/metodos-cobro/${id}/estado`, "PATCH", { activo });
+// Lectura para el POS (A·S·C): solo métodos activos, para renderizar los botones de cobro.
+export const getMetodosCobroPos = () => getJSON<MetodoCobro[]>("/api/pos/metodos-cobro");
 
 // ── Agenda (calendario por día) ──
 export interface AgendaRecurso { id: string; nombre: string; tipo: string | null; orden: number | null; }

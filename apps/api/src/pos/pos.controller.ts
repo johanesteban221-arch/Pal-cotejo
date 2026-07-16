@@ -16,6 +16,12 @@ export class PosController {
     return this.pos.listarMesas();
   }
 
+  // Métodos de cobro activos para elegir al cobrar (A·S·C, hereda del @Roles del controller).
+  @Get("metodos-cobro")
+  metodosCobro() {
+    return this.pos.listarMetodosCobro();
+  }
+
   // ── Caja ──
   @Post("caja/abrir")
   abrirCaja(@Body() dto: AbrirCajaDto, @Req() req: any) {

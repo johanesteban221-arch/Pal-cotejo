@@ -34,6 +34,15 @@ export class PosService {
     });
   }
 
+  // Métodos de cobro ACTIVOS para el POS (lectura A·S·C). El CRUD del catálogo es admin.
+  listarMetodosCobro() {
+    return this.prisma.metodoCobro.findMany({
+      where: { activo: true },
+      select: { id: true, nombre: true, codigo: true, verificacion: true, activo: true, orden: true },
+      orderBy: [{ orden: { sort: "asc", nulls: "last" } }, { nombre: "asc" }],
+    });
+  }
+
   async abrirCuenta(dto: AbrirCuentaDto) {
     if (!dto.mesa && !dto.mesaId && !dto.reservaId && !dto.clienteId) {
       throw new BadRequestException("Indica al menos una mesa, reserva o cliente");
