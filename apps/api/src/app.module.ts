@@ -21,6 +21,7 @@ import { TarifasModule } from "./tarifas/tarifas.module";
 import { CanchasAdminModule } from "./canchas-admin/canchas-admin.module";
 import { AgendaModule } from "./agenda/agenda.module";
 import { MetodosCobroModule } from "./metodos-cobro/metodos-cobro.module";
+import { ConteoModule } from "./conteo/conteo.module";
 import { envValidationSchema } from "./config/env.validation";
 
 @Module({
@@ -57,6 +58,7 @@ import { envValidationSchema } from "./config/env.validation";
     CanchasAdminModule,
     AgendaModule,
     MetodosCobroModule,
+    ConteoModule,
   ],
 })
 export class AppModule {}
