@@ -41,7 +41,7 @@ export default function BarPOS() {
   const [cajaCargada, setCajaCargada] = useState(false);
   const [modalAbrir, setModalAbrir] = useState(false);
   const [modalCerrar, setModalCerrar] = useState(false);
-  const [resumen, setResumen] = useState<CajaCierre | null>(null);
+  const [resumen, setResumen] = useState<(CajaCierre & { nota: string | null }) | null>(null);
   const [cuentas, setCuentas] = useState<Cuenta[]>([]);
   const [reporte, setReporte] = useState<ReporteBar | null>(null);
   const [sel, setSel] = useState<Cuenta | null>(null);
@@ -124,11 +124,6 @@ export default function BarPOS() {
       .then(() => { setModalAbrir(false); recargar(); aviso("✓ Caja abierta."); })
       .catch(onErr);
   }
-  function cerrarCajaAction(montoContado: number, nota?: string) {
-    cerrarCaja(montoContado, nota)
-      .then((r) => { setModalCerrar(false); setResumen(r); recargar(); })
-      .catch(onErr);
-  }
   function anular() {
     if (!sel) return;
     anularCuenta(sel.id).then(() => { aviso("Cuenta anulada"); setSel(null); recargar(); }).catch(onErr);
@@ -158,10 +153,7 @@ export default function BarPOS() {
             <div style={{ display: "flex", gap: 16, flexWrap: "wrap", alignItems: "center" }}>
               <span className="status-pill pill-green">● Caja abierta</span>
               <span className="muted" style={{ fontSize: 13 }}>Fondo <b style={{ color: "var(--cream)" }}>{formatoCOP(caja.montoInicial)}</b></span>
-              <span className="muted" style={{ fontSize: 13 }}>Efectivo <b style={{ color: "#4CAF50" }}>{formatoCOP(caja.ventas.efectivo)}</b></span>
-              <span className="muted" style={{ fontSize: 13 }}>Tarjeta <b style={{ color: "var(--cream)" }}>{formatoCOP(caja.ventas.tarjeta)}</b></span>
-              <span className="muted" style={{ fontSize: 13 }}>Otro <b style={{ color: "var(--cream)" }}>{formatoCOP(caja.ventas.otro)}</b></span>
-              <span style={{ fontSize: 13, color: "var(--gold)" }}>Efectivo esperado <b>{formatoCOP(caja.efectivoEsperado)}</b></span>
+              <span className="muted" style={{ fontSize: 12 }}>Abierta {new Date(caja.abiertaEn).toLocaleString("es-CO", { dateStyle: "short", timeStyle: "short" })}</span>
             </div>
             <button className="btn-outline" onClick={() => setModalCerrar(true)}>Cerrar caja</button>
           </div>
@@ -359,8 +351,14 @@ export default function BarPOS() {
       )}
 
       {modalAbrir && <AbrirCajaModal onAbrir={abrirCajaAction} onClose={() => setModalAbrir(false)} />}
-      {modalCerrar && caja && (
-        <CerrarCajaModal caja={caja} cuentasAbiertas={cuentas.length} onCerrar={cerrarCajaAction} onClose={() => setModalCerrar(false)} />
+      {modalCerrar && (
+        <CerrarCajaModal
+          cuentasAbiertas={cuentas.length}
+          onCerrar={(c, n) => cerrarCaja(c, n)}
+          onDone={(r, n) => { setModalCerrar(false); setResumen({ ...r, nota: n }); recargar(); }}
+          onErr={onErr}
+          onClose={() => setModalCerrar(false)}
+        />
       )}
       {resumen && <ResumenCierreModal r={resumen} onClose={() => setResumen(null)} />}
       {recibo && <ReciboModal r={recibo} onClose={() => setRecibo(null)} />}
@@ -405,15 +403,6 @@ function ReciboModal({
 }
 
 
-function Fila({ k, v, bold, muted }: { k: string; v: string; bold?: boolean; muted?: boolean }) {
-  return (
-    <div style={{ display: "flex", justifyContent: "space-between" }}>
-      <span className={muted ? "muted" : undefined}>{k}</span>
-      <span style={{ color: bold ? "var(--gold)" : "var(--cream)", fontFamily: bold ? "var(--font-d)" : undefined }}>{v}</span>
-    </div>
-  );
-}
-
 function AbrirCajaModal({ onAbrir, onClose }: { onAbrir: (m: number) => void; onClose: () => void }) {
   const [monto, setMonto] = useState("");
   const [error, setError] = useState("");
@@ -440,83 +429,72 @@ function AbrirCajaModal({ onAbrir, onClose }: { onAbrir: (m: number) => void; on
   );
 }
 
-function CerrarCajaModal({ caja, cuentasAbiertas, onCerrar, onClose }: {
-  caja: CajaActual; cuentasAbiertas: number; onCerrar: (contado: number, nota?: string) => void; onClose: () => void;
+function CerrarCajaModal({ cuentasAbiertas, onCerrar, onDone, onErr, onClose }: {
+  cuentasAbiertas: number;
+  onCerrar: (contado: number, nota?: string) => Promise<CajaCierre>;
+  onDone: (r: CajaCierre, nota: string | null) => void;
+  onErr: (e: unknown) => void;
+  onClose: () => void;
 }) {
   const [contado, setContado] = useState("");
   const [nota, setNota] = useState("");
   const [error, setError] = useState("");
-  const n = contado.trim() === "" ? null : Number(contado);
-  const diferencia = n != null && Number.isFinite(n) ? n - caja.efectivoEsperado : null;
-  const descuadre = diferencia != null && diferencia !== 0;
+  const [descuadre, setDescuadre] = useState(false);
+  const [enviando, setEnviando] = useState(false);
   function confirmar() {
     setError("");
-    if (n == null || !Number.isInteger(n) || n < 0) { setError("Ingresa el efectivo contado (entero ≥ 0)."); return; }
-    if (n - caja.efectivoEsperado !== 0 && !nota.trim()) { setError("Hay una diferencia. Indica el motivo del descuadre."); return; }
-    onCerrar(n, nota.trim() || undefined);
+    const n = contado.trim() === "" ? NaN : Number(contado);
+    if (!Number.isInteger(n) || n < 0) { setError("Ingresa el efectivo contado (entero ≥ 0)."); return; }
+    setEnviando(true);
+    onCerrar(n, nota.trim() || undefined)
+      .then((r) => onDone(r, nota.trim() || null))
+      .catch((e) => {
+        if (e instanceof NoAutorizado) { onErr(e); return; }
+        // El único 400 al cerrar es "falta la nota porque la caja descuadró".
+        setDescuadre(true);
+        setError((e as Error).message);
+      })
+      .finally(() => setEnviando(false));
   }
-  const difColor = diferencia == null ? "var(--muted)" : diferencia === 0 ? "#4CAF50" : "var(--red-lt)";
-  const difTxt = diferencia == null ? "—" : diferencia === 0 ? "Cuadra ✓" : `${diferencia > 0 ? "Sobrante" : "Faltante"} ${formatoCOP(Math.abs(diferencia))}`;
   return (
     <div onClick={onClose} style={overlayCaja}>
       <div onClick={(e) => e.stopPropagation()} style={modalCaja}>
-        <div className="admin-title" style={{ fontSize: 20, marginBottom: 16 }}>Cierre de caja — arqueo</div>
+        <div className="admin-title" style={{ fontSize: 20, marginBottom: 4 }}>Cierre de caja</div>
+        <div className="muted" style={{ fontSize: 12, marginBottom: 16 }}>Cuenta el efectivo físico del cajón. No verás el esperado.</div>
         {cuentasAbiertas > 0 && <div style={{ ...bannerError, background: "rgba(212,160,23,.12)", color: "var(--gold)" }}>⚠️ Hay {cuentasAbiertas} cuenta(s) abierta(s) sin cobrar. Puedes cerrar igual.</div>}
         {error && <div style={bannerError}>⚠️ {error}</div>}
-        <div style={{ display: "grid", gap: 6, marginBottom: 14, fontSize: 14 }}>
-          <Fila k="Fondo inicial" v={formatoCOP(caja.montoInicial)} />
-          <Fila k="Ventas efectivo" v={formatoCOP(caja.ventas.efectivo)} />
-          <Fila k="Ventas tarjeta" v={formatoCOP(caja.ventas.tarjeta)} muted />
-          <Fila k="Ventas otro" v={formatoCOP(caja.ventas.otro)} muted />
-          <div style={{ borderTop: "1px solid var(--border)", margin: "4px 0" }} />
-          <Fila k="Efectivo esperado" v={formatoCOP(caja.efectivoEsperado)} bold />
-        </div>
         <div className="form-group" style={{ margin: 0, marginBottom: 12 }}>
           <label className="form-label">Efectivo contado (físico)</label>
           <input className="form-input" type="number" min={0} step={1} value={contado} onChange={(e) => setContado(e.target.value)} placeholder="0" autoFocus />
         </div>
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "10px 14px", borderRadius: 8, background: "var(--bg)", marginBottom: 12 }}>
-          <span className="muted">Diferencia</span>
-          <b style={{ color: difColor }}>{difTxt}</b>
+        <div className="form-group" style={{ margin: 0, marginBottom: 16 }}>
+          <label className="form-label" style={descuadre ? { color: "var(--gold)" } : undefined}>
+            {descuadre ? "Motivo del descuadre (obligatorio)" : "Nota (opcional)"}
+          </label>
+          <input className="form-input" value={nota} onChange={(e) => setNota(e.target.value)} placeholder="Motivo si algo no cuadra…" />
         </div>
-        {descuadre && (
-          <div className="form-group" style={{ margin: 0, marginBottom: 14 }}>
-            <label className="form-label">Motivo del descuadre (obligatorio)</label>
-            <input className="form-input" value={nota} onChange={(e) => setNota(e.target.value)} placeholder="Ej: faltó vuelto, propina…" />
-          </div>
-        )}
         <div style={{ display: "flex", gap: 8 }}>
-          <button className="btn-gold" style={{ flex: 1 }} onClick={confirmar}>Cerrar caja</button>
-          <button className="btn-outline" onClick={onClose}>Cancelar</button>
+          <button className="btn-gold" style={{ flex: 1 }} disabled={enviando} onClick={confirmar}>{enviando ? "Cerrando…" : "Cerrar caja"}</button>
+          <button className="btn-outline" disabled={enviando} onClick={onClose}>Cancelar</button>
         </div>
       </div>
     </div>
   );
 }
 
-function ResumenCierreModal({ r, onClose }: { r: CajaCierre; onClose: () => void }) {
-  const dif = r.diferencia;
-  const difColor = dif === 0 ? "#4CAF50" : "var(--red-lt)";
+function ResumenCierreModal({ r, onClose }: { r: CajaCierre & { nota: string | null }; onClose: () => void }) {
   return (
     <div onClick={onClose} style={overlayCaja}>
       <div onClick={(e) => e.stopPropagation()} style={modalCaja}>
-        <div className="admin-title" style={{ fontSize: 20, marginBottom: 4 }}>Arqueo de cierre</div>
-        <div className="muted" style={{ fontSize: 12, marginBottom: 16 }}>Caja cerrada.</div>
-        <div style={{ display: "grid", gap: 6, fontSize: 14, marginBottom: 12 }}>
-          <Fila k="Fondo inicial" v={formatoCOP(r.montoInicial)} />
-          <Fila k="Efectivo (ventas)" v={formatoCOP(r.desglose.efectivo.total)} />
-          <Fila k="Tarjeta" v={formatoCOP(r.desglose.tarjeta.total)} muted />
-          <Fila k="Otro" v={formatoCOP(r.desglose.otro.total)} muted />
-          <div style={{ borderTop: "1px solid var(--border)", margin: "4px 0" }} />
-          <Fila k="Esperado (efectivo)" v={formatoCOP(r.montoEsperado)} bold />
-          <Fila k="Contado" v={formatoCOP(r.montoContado)} bold />
-        </div>
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "10px 14px", borderRadius: 8, background: "var(--bg)", marginBottom: 12 }}>
-          <span className="muted">Diferencia</span>
-          <b style={{ color: difColor }}>{dif === 0 ? "Cuadra ✓" : `${dif > 0 ? "Sobrante" : "Faltante"} ${formatoCOP(Math.abs(dif))}`}</b>
-        </div>
+        <div className="admin-title" style={{ fontSize: 20, marginBottom: 16 }}>Caja cerrada</div>
+        {r.cuadrada ? (
+          <div style={{ padding: "14px 16px", borderRadius: 10, background: "rgba(76,175,80,.14)", color: "#4CAF50", fontSize: 16, fontFamily: "var(--font-d)", marginBottom: 12 }}>✓ Caja cuadrada</div>
+        ) : (
+          <div style={{ padding: "14px 16px", borderRadius: 10, background: "rgba(212,160,23,.14)", color: "var(--gold)", fontSize: 16, fontFamily: "var(--font-d)", marginBottom: 12 }}>
+            ⚠ Caja descuadrada — {r.diferencia > 0 ? "Sobrante" : "Faltante"} {formatoCOP(Math.abs(r.diferencia))}
+          </div>
+        )}
         {r.nota && <div className="muted" style={{ fontSize: 13, marginBottom: 12 }}>Nota: {r.nota}</div>}
-        {r.aviso && <div style={{ ...bannerError, background: "rgba(212,160,23,.12)", color: "var(--gold)" }}>⚠️ {r.aviso}</div>}
         <button className="btn-gold" style={{ width: "100%" }} onClick={onClose}>Listo</button>
       </div>
     </div>

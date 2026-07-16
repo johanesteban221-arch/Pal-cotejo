@@ -450,27 +450,17 @@ export interface AgendaDia {
 export const getAgendaDia = (fecha: string) => getJSON<AgendaDia>(`/api/agenda/dia?fecha=${fecha}`);
 
 // ── Caja (sesión / arqueo) ──
-export interface CajaVentas { efectivo: number; tarjeta: number; otro: number; total: number; }
+// Cierre a ciegas: el POS no recibe montos de ventas ni esperado.
 export interface CajaActual {
   id: string;
   montoInicial: number;
   abiertaEn: string;
   estado: "ABIERTA" | "CERRADA";
-  ventas: CajaVentas;
-  efectivoEsperado: number;
+  usuarioAperturaId: string;
 }
-export interface CajaDesglose { total: number; count: number; }
 export interface CajaCierre {
-  id: string;
-  montoInicial: number;
-  montoEsperado: number;
-  montoContado: number;
+  cuadrada: boolean;
   diferencia: number;
-  nota: string | null;
-  cerradaEn: string;
-  desglose: { efectivo: CajaDesglose; tarjeta: CajaDesglose; otro: CajaDesglose; totalVentas: number };
-  cuentasAbiertasPendientes: number;
-  aviso: string | null;
 }
 // El backend devuelve null (cuerpo vacío) si no hay caja abierta.
 export async function getCajaActual(): Promise<CajaActual | null> {
