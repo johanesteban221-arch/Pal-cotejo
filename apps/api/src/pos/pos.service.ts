@@ -141,6 +141,15 @@ export class PosService {
     if (cuenta.estado !== "ABIERTA") throw new BadRequestException("La cuenta ya fue cerrada");
     if (cuenta.items.length === 0) throw new BadRequestException("La cuenta no tiene productos");
 
+    // Validar el método contra el catálogo ACTIVO (case-insensitive). Se guarda el
+    // codigo canónico del catálogo (no el string crudo) para que el arqueo lo reconozca
+    // sin ambigüedad de mayúsculas.
+    const metodo = await this.prisma.metodoCobro.findFirst({
+      where: { codigo: { equals: metodoPago, mode: "insensitive" }, activo: true },
+      select: { codigo: true },
+    });
+    if (!metodo) throw new BadRequestException("Método de pago no válido");
+
     // Exigir caja abierta: sin sesión no se puede cobrar (no cuadraría en el arqueo).
     const sesion = await this.prisma.sesionCaja.findFirst({ where: { estado: "ABIERTA" }, select: { id: true } });
     if (!sesion) throw new ConflictException("Abre la caja antes de cobrar");
@@ -149,7 +158,7 @@ export class PosService {
     return this.prisma.$transaction(async (tx) => {
       const pagada = await tx.cuenta.update({
         where: { id },
-        data: { estado: "PAGADA", metodoPago, cerradaEn: new Date(), sesionCajaId: sesion.id },
+        data: { estado: "PAGADA", metodoPago: metodo.codigo, cerradaEn: new Date(), sesionCajaId: sesion.id },
       });
       for (const it of cuenta.items) {
         const prod = await tx.producto.findUnique({ where: { id: it.productoId } });
@@ -320,13 +329,25 @@ export class PosService {
     const sesion = await this.prisma.sesionCaja.findFirst({ where: { estado: "ABIERTA" } });
     if (!sesion) throw new ConflictException("No hay caja abierta");
 
-    // Efectivo vendido en la sesión (para el esperado). Cálculo del arqueo SIN CAMBIOS.
+    // Qué codigos cuentan al cajón (verificacion = CAJON). Se lee el catálogo COMPLETO
+    // (incluidos archivados): el arqueo respeta la verificacion del método con el que se
+    // cobró, aunque se archive a mitad de sesión → no descuadra ventas ya hechas.
+    const metodosCajon = await this.prisma.metodoCobro.findMany({
+      where: { verificacion: "CAJON" },
+      select: { codigo: true },
+    });
+    const codigosCajon = new Set(metodosCajon.map((m) => m.codigo));
+
+    // Ventas de la sesión agrupadas por método (solo PAGADA).
     const porMetodo = await this.prisma.cuenta.groupBy({
       by: ["metodoPago"],
       where: { sesionCajaId: sesion.id, estado: "PAGADA" },
       _sum: { total: true },
     });
-    const efectivo = porMetodo.find((g) => g.metodoPago === "EFECTIVO")?._sum.total ?? 0;
+    // Efectivo en cajón = suma de las ventas cuyo método es CAJON.
+    const efectivo = porMetodo
+      .filter((g) => g.metodoPago != null && codigosCajon.has(g.metodoPago))
+      .reduce((acc, g) => acc + (g._sum.total ?? 0), 0);
 
     // Arqueo: el esperado del cajón es fondo + efectivo (tarjeta/otro no están en caja).
     const montoEsperado = sesion.montoInicial + efectivo;
