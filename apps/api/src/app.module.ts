@@ -24,6 +24,7 @@ import { MetodosCobroModule } from "./metodos-cobro/metodos-cobro.module";
 import { ConteoModule } from "./conteo/conteo.module";
 import { NotificacionesModule } from "./notificaciones/notificaciones.module";
 import { AlertasModule } from "./alertas/alertas.module";
+import { MesasAdminModule } from "./mesas-admin/mesas-admin.module";
 import { envValidationSchema } from "./config/env.validation";
 
 @Module({
@@ -63,6 +64,7 @@ import { envValidationSchema } from "./config/env.validation";
     ConteoModule,
     NotificacionesModule,
     AlertasModule,
+    MesasAdminModule,
   ],
 })
 export class AppModule {}
