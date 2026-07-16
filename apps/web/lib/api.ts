@@ -449,6 +449,42 @@ export interface AgendaDia {
 }
 export const getAgendaDia = (fecha: string) => getJSON<AgendaDia>(`/api/agenda/dia?fecha=${fecha}`);
 
+// ── Caja (sesión / arqueo) ──
+export interface CajaVentas { efectivo: number; tarjeta: number; otro: number; total: number; }
+export interface CajaActual {
+  id: string;
+  montoInicial: number;
+  abiertaEn: string;
+  estado: "ABIERTA" | "CERRADA";
+  ventas: CajaVentas;
+  efectivoEsperado: number;
+}
+export interface CajaDesglose { total: number; count: number; }
+export interface CajaCierre {
+  id: string;
+  montoInicial: number;
+  montoEsperado: number;
+  montoContado: number;
+  diferencia: number;
+  nota: string | null;
+  cerradaEn: string;
+  desglose: { efectivo: CajaDesglose; tarjeta: CajaDesglose; otro: CajaDesglose; totalVentas: number };
+  cuentasAbiertasPendientes: number;
+  aviso: string | null;
+}
+// El backend devuelve null (cuerpo vacío) si no hay caja abierta.
+export async function getCajaActual(): Promise<CajaActual | null> {
+  const res = await fetch(`${API}/api/pos/caja/actual`, { cache: "no-store", headers: { ...authHeaders() } });
+  if (res.status === 401) throw new NoAutorizado();
+  if (!res.ok) throw new Error("No se pudo cargar la caja");
+  const text = await res.text();
+  return text ? (JSON.parse(text) as CajaActual) : null;
+}
+export const abrirCaja = (montoInicial: number) =>
+  sendJSON<CajaActual>("/api/pos/caja/abrir", "POST", { montoInicial });
+export const cerrarCaja = (montoContado: number, nota?: string) =>
+  sendJSON<CajaCierre>("/api/pos/caja/cerrar", "POST", { montoContado, nota });
+
 export function formatoCOP(valor: number): string {
   return new Intl.NumberFormat("es-CO", {
     style: "currency",
