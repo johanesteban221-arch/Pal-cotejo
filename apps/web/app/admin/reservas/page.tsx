@@ -8,9 +8,11 @@ import {
   getCanchas,
   getReservasPorFecha,
   crearReservaManual,
+  getDisponibilidad,
   formatoCOP,
 } from "../../../lib/api";
 import { NoAutorizado, logout } from "../../../lib/auth";
+import CobrarReservaModal from "./CobrarReservaModal";
 
 const PILL: Record<string, { cls: string; label: string }> = {
   CONFIRMADA: { cls: "pill-green", label: "Confirmada" },
@@ -39,6 +41,8 @@ export default function ReservasAdmin() {
     telefono: "",
     pagado: false,
   });
+  const [preview, setPreview] = useState<"loading" | { precio: number | null; tipo: string | null } | null>(null);
+  const [cobrando, setCobrando] = useState<ReservaAdmin | null>(null);
 
   const onErr = (e: unknown) => {
     if (e instanceof NoAutorizado) {
@@ -60,6 +64,21 @@ export default function ReservasAdmin() {
   useEffect(() => {
     cargar(); // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [fecha]);
+
+  // Preview del costo: busca el slot que coincide con cancha+fecha+hora y muestra su tarifa.
+  useEffect(() => {
+    if (!f.canchaId || !f.fecha || !f.horaInicio || !f.horaFin) { setPreview(null); return; }
+    let cancelado = false;
+    setPreview("loading");
+    getDisponibilidad(f.canchaId, f.fecha)
+      .then((slots) => {
+        if (cancelado) return;
+        const slot = slots.find((sl) => sl.horaInicio === f.horaInicio && sl.horaFin === f.horaFin);
+        setPreview(slot ? { precio: slot.precio, tipo: slot.tipo } : { precio: null, tipo: null });
+      })
+      .catch(() => { if (!cancelado) setPreview({ precio: null, tipo: null }); });
+    return () => { cancelado = true; }; // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [f.canchaId, f.fecha, f.horaInicio, f.horaFin]);
 
   function crear(e: React.FormEvent) {
     e.preventDefault();
@@ -126,6 +145,16 @@ export default function ReservasAdmin() {
               <input type="checkbox" checked={f.pagado} onChange={(e) => set("pagado", e.target.checked)} style={{ accentColor: "var(--gold)" }} />
               ¿Pagó el total en caja?
             </label>
+            {preview === "loading" && <span className="muted" style={{ fontSize: 13 }}>Calculando costo…</span>}
+            {preview && preview !== "loading" && (
+              preview.precio != null ? (
+                <span style={{ fontSize: 14, color: "var(--cream)" }}>
+                  Costo: <b style={{ color: "var(--gold)" }}>{formatoCOP(preview.precio)}</b>{preview.tipo ? ` (${preview.tipo})` : ""}
+                </span>
+              ) : (
+                <span className="muted" style={{ fontSize: 13 }}>Sin tarifa para esa hora</span>
+              )
+            )}
             <button className="btn-gold" type="submit">Crear reserva manual</button>
           </div>
         </div>
@@ -147,6 +176,7 @@ export default function ReservasAdmin() {
               <th>Valor</th>
               <th>Saldo</th>
               <th>Estado</th>
+              <th></th>
             </tr>
           </thead>
           <tbody>
@@ -161,17 +191,31 @@ export default function ReservasAdmin() {
                   <td>{formatoCOP(r.montoTotal)}</td>
                   <td>{r.saldo > 0 ? formatoCOP(r.saldo) : "—"}</td>
                   <td><span className={`status-pill ${p.cls}`}>{p.label}</span></td>
+                  <td style={{ textAlign: "right" }}>
+                    {r.saldo > 0 && (
+                      <button className="btn-gold" style={{ fontSize: 12, padding: "6px 12px" }} onClick={() => setCobrando(r)}>Cobrar</button>
+                    )}
+                  </td>
                 </tr>
               );
             })}
             {reservas.length === 0 && (
               <tr>
-                <td colSpan={7} className="muted" style={{ textAlign: "center" }}>Sin reservas para esta fecha.</td>
+                <td colSpan={8} className="muted" style={{ textAlign: "center" }}>Sin reservas para esta fecha.</td>
               </tr>
             )}
           </tbody>
         </table>
       </div>
+
+      {cobrando && (
+        <CobrarReservaModal
+          reserva={cobrando}
+          onClose={() => setCobrando(null)}
+          onCobrado={cargar}
+          onErr={onErr}
+        />
+      )}
     </>
   );
 }

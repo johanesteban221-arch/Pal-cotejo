@@ -348,6 +348,20 @@ export const crearBloqueo = (b: Record<string, unknown>) => send("POST", "/api/b
 export const eliminarBloqueo = (id: string) => send("DELETE", `/api/bloqueos/${id}`);
 
 export const crearReservaManual = (r: Record<string, unknown>) => send("POST", "/api/reservas/manual", r);
+export interface ReservaCobroRecibo {
+  cuentaId: string;
+  reservaId: string;
+  cobro: number;
+  metodo: string;
+  metodoCodigo: string;
+  montoTotal: number;
+  montoAbonado: number;
+  saldo: number;
+  estado: string;
+  reserva: { cancha: string; cliente: string };
+}
+export const cobrarReserva = (id: string, metodoPago: string, monto?: number) =>
+  send<ReservaCobroRecibo>("POST", `/api/pos/reservas/${id}/cobrar`, monto != null ? { metodoPago, monto } : { metodoPago });
 
 export const getRecurrentes = () => getJSON<Recurrente[]>("/api/recurrentes");
 export const crearRecurrente = (r: Record<string, unknown>) => send("POST", "/api/recurrentes", r);
