@@ -9,6 +9,7 @@ import { PrismaService } from "../prisma/prisma.service";
 import { DisponibilidadService } from "../disponibilidad/disponibilidad.service";
 import { ClientesService } from "../clientes/clientes.service";
 import { CrearReservaDto, CrearReservaManualDto } from "./dto";
+import { NotificacionesService } from "../notificaciones/notificaciones.service";
 
 // Estados que ocupan un slot (impiden reservarlo de nuevo).
 const ESTADOS_OCUPAN: Prisma.EnumEstadoReservaFilter["in"] = ["PENDIENTE", "CONFIRMADA"];
@@ -19,6 +20,7 @@ export class ReservasService {
     private prisma: PrismaService,
     private disponibilidad: DisponibilidadService,
     private clientes: ClientesService,
+    private notificaciones: NotificacionesService,
   ) {}
 
   private depositoPorDefecto(): number {
@@ -128,7 +130,7 @@ export class ReservasService {
    * Crea una reserva MANUAL desde caja (ya CONFIRMADA, sin pago en linea).
    * Si `pagado` es true, se marca el total como pagado; si no, queda saldo en caja.
    */
-  async crearManual(dto: CrearReservaManualDto) {
+  async crearManual(dto: CrearReservaManualDto, usuarioId?: string) {
     const slots = await this.disponibilidad.porCanchaYFecha(dto.canchaId, dto.fecha);
     const slot = slots.find(
       (s) => s.horaInicio === dto.horaInicio && s.horaFin === dto.horaFin,
@@ -169,6 +171,28 @@ export class ReservasService {
       { isolationLevel: Prisma.TransactionIsolationLevel.Serializable },
     );
     await this.clientes.recalcularUno(cliente.id).catch(() => {});
+
+    // Alerta al dueño (fire-and-forget, POST-commit; NUNCA dentro del $transaction).
+    // Lectura chica del nombre de la cancha (solo hay canchaId a mano). No cambia crearManual.
+    const cancha = await this.prisma.cancha.findUnique({
+      where: { id: dto.canchaId },
+      select: { nombre: true },
+    });
+    this.notificaciones.dispararAlerta("RESERVA_NUEVA", {
+      reservaId: reserva.id,
+      clienteNombre: cliente.nombre,
+      clienteTelefono: cliente.telefono,
+      cancha: cancha?.nombre ?? null,
+      fecha: dto.fecha,
+      horaInicio: dto.horaInicio,
+      horaFin: dto.horaFin,
+      montoTotal,
+      montoAbonado,
+      saldo,
+      estado: reserva.estado,
+      usuarioId: usuarioId ?? null,
+    });
+
     return { reservaId: reserva.id, montoTotal, montoAbonado, saldo, estado: reserva.estado };
   }
 

@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Param, Post, Query, BadRequestException, UseGuards } from "@nestjs/common";
+import { Body, Controller, Get, Param, Post, Query, Req, BadRequestException, UseGuards } from "@nestjs/common";
 import { ReservasService } from "./reservas.service";
 import { CrearReservaDto, CrearReservaManualDto } from "./dto";
 import { JwtAuthGuard } from "../auth/jwt-auth.guard";
@@ -19,8 +19,8 @@ export class ReservasController {
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles("ADMIN", "SUPERVISOR", "CAJA")
   @Post("manual")
-  crearManual(@Body() dto: CrearReservaManualDto) {
-    return this.reservas.crearManual(dto);
+  crearManual(@Body() dto: CrearReservaManualDto, @Req() req: any) {
+    return this.reservas.crearManual(dto, req.user.sub);
   }
 
   // Acción de caja: requiere sesión de staff.
