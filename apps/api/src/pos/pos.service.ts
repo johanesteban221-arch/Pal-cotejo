@@ -325,6 +325,92 @@ export class PosService {
   }
 
   // ── Reporte de ventas del bar ──
+  /**
+   * Cobra (total o parcial) el saldo de una reserva ligándolo a la caja como una
+   * Cuenta PAGADA más — así el arqueo lo cuenta con la MISMA lógica (verificacion=CAJON),
+   * sin tocar cerrarCaja. Cada abono queda en la sesión abierta en ESE momento.
+   */
+  async cobrarReserva(reservaId: string, metodoPago: string, monto?: number) {
+    const reserva = await this.prisma.reserva.findUnique({
+      where: { id: reservaId },
+      select: {
+        id: true, estado: true, montoTotal: true, montoAbonado: true,
+        cliente: { select: { nombre: true } },
+        cancha: { select: { nombre: true } },
+      },
+    });
+    if (!reserva) throw new NotFoundException("Reserva no encontrada");
+
+    // Saldo real (recomputado, no confiamos en un campo posiblemente desincronizado).
+    const saldo = reserva.montoTotal - reserva.montoAbonado;
+    if (saldo <= 0) throw new BadRequestException("La reserva ya está saldada");
+
+    // Exigir caja abierta (igual que el cobro del POS).
+    const sesion = await this.prisma.sesionCaja.findFirst({ where: { estado: "ABIERTA" }, select: { id: true } });
+    if (!sesion) throw new ConflictException("Abre la caja antes de cobrar");
+
+    // Validar método contra el catálogo ACTIVO; guardar código canónico (para el arqueo).
+    const metodo = await this.prisma.metodoCobro.findFirst({
+      where: { codigo: { equals: metodoPago, mode: "insensitive" }, activo: true },
+      select: { codigo: true, nombre: true },
+    });
+    if (!metodo) throw new BadRequestException("Método de pago no válido");
+
+    // Monto: omitido = saldo completo; validar rango.
+    const aCobrar = monto == null ? saldo : monto;
+    if (!Number.isInteger(aCobrar) || aCobrar <= 0) {
+      throw new BadRequestException("El monto debe ser un entero mayor a 0");
+    }
+    if (aCobrar > saldo) {
+      throw new BadRequestException(`El monto supera el saldo (saldo: $${saldo})`);
+    }
+
+    const etiqueta = `Reserva ${reserva.cancha.nombre} · ${reserva.cliente.nombre}`;
+    const nuevoAbonado = reserva.montoAbonado + aCobrar;
+    const nuevoSaldo = reserva.montoTotal - nuevoAbonado;
+    // Un abono/pago aprobado confirma una reserva que estaba PENDIENTE; el resto de
+    // estados no se tocan (no inventamos un estado nuevo).
+    const nuevoEstado = reserva.estado === "PENDIENTE" ? "CONFIRMADA" : reserva.estado;
+
+    // Todo o nada: si algo falla, ni se crea la Cuenta ni se mueve el saldo.
+    const out = await this.prisma.$transaction(async (tx) => {
+      // Cuenta PAGADA sin items → no descuenta stock (no hay productos). Nace PAGADA,
+      // así que NO aparece en el salón ni en cuentas abiertas (esas filtran ABIERTA).
+      const cuenta = await tx.cuenta.create({
+        data: {
+          reservaId: reserva.id,
+          estado: "PAGADA",
+          total: aCobrar,
+          metodoPago: metodo.codigo,
+          sesionCajaId: sesion.id,
+          mesa: etiqueta,
+          cerradaEn: new Date(),
+        },
+        select: { id: true },
+      });
+      const r = await tx.reserva.update({
+        where: { id: reserva.id },
+        data: { montoAbonado: nuevoAbonado, saldo: nuevoSaldo, estado: nuevoEstado },
+        select: { montoTotal: true, montoAbonado: true, saldo: true, estado: true },
+      });
+      return { cuentaId: cuenta.id, ...r };
+    });
+
+    // Recibo del cobro (nombre amigable del método para el cliente).
+    return {
+      cuentaId: out.cuentaId,
+      reservaId: reserva.id,
+      cobro: aCobrar,
+      metodo: metodo.nombre,
+      metodoCodigo: metodo.codigo,
+      montoTotal: out.montoTotal,
+      montoAbonado: out.montoAbonado,
+      saldo: out.saldo,
+      estado: out.estado,
+      reserva: { cancha: reserva.cancha.nombre, cliente: reserva.cliente.nombre },
+    };
+  }
+
   async reporte() {
     const OFFSET = 5 * 3600 * 1000;
     const fechaCol = new Date(Date.now() - OFFSET).toISOString().slice(0, 10);

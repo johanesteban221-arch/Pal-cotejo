@@ -49,3 +49,8 @@ export class CerrarCajaDto {
   @IsInt() @Min(0) montoContado!: number;
   @IsOptional() @IsString() nota?: string;
 }
+
+export class CobrarReservaDto {
+  @IsString() metodoPago!: string; // código del catálogo MetodoCobro
+  @IsOptional() @IsInt() @Min(1) monto?: number; // omitido = saldo completo
+}

@@ -1,6 +1,6 @@
 import { Body, Controller, Delete, Get, Param, Patch, Post, Query, Req, UseGuards } from "@nestjs/common";
 import { PosService } from "./pos.service";
-import { AbrirCajaDto, AbrirCuentaDto, CerrarCajaDto, ActualizarProductoDto, AgregarItemDto, CobrarDto, CrearProductoDto, EntradaInventarioDto } from "./dto";
+import { AbrirCajaDto, AbrirCuentaDto, CerrarCajaDto, ActualizarProductoDto, AgregarItemDto, CobrarDto, CobrarReservaDto, CrearProductoDto, EntradaInventarioDto } from "./dto";
 import { JwtAuthGuard } from "../auth/jwt-auth.guard";
 import { RolesGuard } from "../auth/roles.guard";
 import { Roles } from "../auth/roles.decorator";
@@ -132,6 +132,12 @@ export class PosController {
   @Post("cuentas/:id/anular")
   anular(@Param("id") id: string, @Req() req: any) {
     return this.pos.anular(id, req.user.rol);
+  }
+
+  // ── Cobro de reservas (liga a la caja como una venta más) ──
+  @Post("reservas/:id/cobrar")
+  cobrarReserva(@Param("id") id: string, @Body() dto: CobrarReservaDto) {
+    return this.pos.cobrarReserva(id, dto.metodoPago, dto.monto);
   }
 
   // ── Reporte ──
