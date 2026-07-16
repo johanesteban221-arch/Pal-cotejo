@@ -206,6 +206,7 @@ export interface Producto {
   stockMinimo: number;
   stockBaseId: string | null;
   stockBase?: { nombre: string } | null;
+  permitirSinStock: boolean;
   activo: boolean;
 }
 export interface ItemCuenta {

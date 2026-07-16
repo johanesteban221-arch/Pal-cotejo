@@ -26,6 +26,7 @@ export default function ProductoEditModal({
   const [categoria, setCategoria] = useState<Producto["categoria"]>(producto.categoria);
   const [precio, setPrecio] = useState(String(producto.precio));
   const [stockMinimo, setStockMinimo] = useState(String(producto.stockMinimo));
+  const [permitirSinStock, setPermitirSinStock] = useState(producto.permitirSinStock);
   const [guardando, setGuardando] = useState(false);
   const [error, setError] = useState("");
 
@@ -49,6 +50,7 @@ export default function ProductoEditModal({
         return;
       }
       data.stockMinimo = sm;
+      data.permitirSinStock = permitirSinStock;
     }
 
     setGuardando(true);
@@ -73,7 +75,7 @@ export default function ProductoEditModal({
 
         {esPresentacion && (
           <div className="muted" style={{ fontSize: 12, marginBottom: 14, padding: "8px 12px", background: "var(--bg)", borderRadius: 8 }}>
-            Presentación de <b>{producto.stockBase?.nombre ?? "producto base"}</b> — usa su stock. Solo se editan nombre, categoría y precio.
+            Presentación de <b>{producto.stockBase?.nombre ?? "producto base"}</b> — usa su stock y su configuración de stock (incluido si permite vender sin stock). Solo se editan nombre, categoría y precio.
           </div>
         )}
 
@@ -102,6 +104,20 @@ export default function ProductoEditModal({
               <label className="form-label">Stock mínimo (alerta)</label>
               <input className="form-input" type="number" min={0} step={1} value={stockMinimo} onChange={(e) => setStockMinimo(e.target.value)} />
               <div className="muted" style={{ fontSize: 12, marginTop: 6 }}>El stock se ajusta con “+ Entrada”, no aquí.</div>
+            </div>
+          )}
+
+          {!esPresentacion && (
+            <div className="form-group" style={{ margin: 0 }}>
+              <label style={{ display: "flex", gap: 10, alignItems: "flex-start", cursor: "pointer" }}>
+                <input type="checkbox" checked={permitirSinStock} onChange={(e) => setPermitirSinStock(e.target.checked)} style={{ marginTop: 3 }} />
+                <span>
+                  <span className="form-label" style={{ margin: 0 }}>Permitir vender sin stock</span>
+                  <span className="muted" style={{ display: "block", fontSize: 12 }}>
+                    Si está activo, se puede vender aunque no haya stock (queda en negativo). Si está desactivado, la venta se bloquea sin stock.
+                  </span>
+                </span>
+              </label>
             </div>
           )}
         </div>

@@ -107,9 +107,19 @@ export default function ProductosAdmin() {
                   <td><span className="status-pill pill-gray">{p.categoria}</span></td>
                   <td>{formatoCOP(p.precio)}</td>
                   <td>
-                    {esPresentacion
-                      ? <span className="muted" style={{ fontSize: 12 }}>usa stock de {p.stockBase?.nombre}</span>
-                      : <span className={`status-pill ${bajo ? "pill-red" : "pill-green"}`}>{p.stock}</span>}
+                    {esPresentacion ? (
+                      <span className="muted" style={{ fontSize: 12 }}>usa stock de {p.stockBase?.nombre}</span>
+                    ) : (
+                      <>
+                        <span className={`status-pill ${bajo ? "pill-red" : "pill-green"}`}>{p.stock}</span>
+                        <span
+                          title={p.permitirSinStock ? "Permite vender sin stock (queda negativo)" : "Bloquea la venta cuando no hay stock"}
+                          style={{ marginLeft: 6, fontSize: 12, cursor: "help" }}
+                        >
+                          {p.permitirSinStock ? "🔓" : "🔒"}
+                        </span>
+                      </>
+                    )}
                   </td>
                   <td>{esPresentacion ? <span className="muted">—</span> : p.stockMinimo}</td>
                   <td>{p.activo ? <span className="status-pill pill-green">Activo</span> : <span className="status-pill pill-red">Inactivo</span>}</td>

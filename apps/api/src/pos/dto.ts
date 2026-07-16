@@ -1,4 +1,4 @@
-import { IsEnum, IsInt, IsOptional, IsString, Min } from "class-validator";
+import { IsBoolean, IsEnum, IsInt, IsOptional, IsString, Min } from "class-validator";
 import { CategoriaProducto } from "@prisma/client";
 
 export class CrearProductoDto {
@@ -16,6 +16,7 @@ export class ActualizarProductoDto {
   @IsOptional() @IsEnum(CategoriaProducto) categoria?: CategoriaProducto;
   @IsOptional() @IsInt() @Min(0) precio?: number;
   @IsOptional() @IsInt() @Min(0) stockMinimo?: number;
+  @IsOptional() @IsBoolean() permitirSinStock?: boolean;
   @IsOptional() activo?: boolean;
 }
 
