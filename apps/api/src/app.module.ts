@@ -19,6 +19,7 @@ import { PosModule } from "./pos/pos.module";
 import { UsuariosModule } from "./usuarios/usuarios.module";
 import { TarifasModule } from "./tarifas/tarifas.module";
 import { CanchasAdminModule } from "./canchas-admin/canchas-admin.module";
+import { AgendaModule } from "./agenda/agenda.module";
 import { envValidationSchema } from "./config/env.validation";
 
 @Module({
@@ -53,6 +54,7 @@ import { envValidationSchema } from "./config/env.validation";
     UsuariosModule,
     TarifasModule,
     CanchasAdminModule,
+    AgendaModule,
   ],
 })
 export class AppModule {}
