@@ -32,6 +32,8 @@ export class PosController {
     return this.pos.cerrarCaja(req.user.sub, dto.montoContado, dto.nota);
   }
 
+  // Arqueo completo de una sesión: solo ADMIN (cierre a ciegas para caja/supervisor).
+  @Roles("ADMIN")
   @Get("caja/:id")
   sesion(@Param("id") id: string) {
     return this.pos.obtenerSesion(id);

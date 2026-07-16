@@ -300,24 +300,19 @@ export class PosService {
     });
   }
 
-  // Sesión abierta actual (o null), con el acumulado EN VIVO por método.
+  // Cierre a ciegas: el POS NO ve ventas ni esperado. Solo datos base de la sesión.
+  // Los montos los consulta el ADMIN en el módulo histórico (endpoint aparte).
   async cajaActual() {
-    const sesion = await this.prisma.sesionCaja.findFirst({ where: { estado: "ABIERTA" } });
-    if (!sesion) return null;
-    const porMetodo = await this.prisma.cuenta.groupBy({
-      by: ["metodoPago"],
-      where: { sesionCajaId: sesion.id, estado: "PAGADA" },
-      _sum: { total: true },
+    return this.prisma.sesionCaja.findFirst({
+      where: { estado: "ABIERTA" },
+      select: {
+        id: true,
+        abiertaEn: true,
+        montoInicial: true,
+        estado: true,
+        usuarioAperturaId: true,
+      },
     });
-    const suma = (m: string) => porMetodo.find((g) => g.metodoPago === m)?._sum.total ?? 0;
-    const efectivo = suma("EFECTIVO");
-    const tarjeta = suma("TARJETA");
-    const otro = suma("OTRO");
-    return {
-      ...sesion,
-      ventas: { efectivo, tarjeta, otro, total: efectivo + tarjeta + otro },
-      efectivoEsperado: sesion.montoInicial + efectivo,
-    };
   }
 
   // Cierre + arqueo. Congela montoEsperado/contado/diferencia. Exige nota si descuadra.
@@ -325,18 +320,13 @@ export class PosService {
     const sesion = await this.prisma.sesionCaja.findFirst({ where: { estado: "ABIERTA" } });
     if (!sesion) throw new ConflictException("No hay caja abierta");
 
-    // Desglose por método (solo cuentas PAGADA de esta sesión).
+    // Efectivo vendido en la sesión (para el esperado). Cálculo del arqueo SIN CAMBIOS.
     const porMetodo = await this.prisma.cuenta.groupBy({
       by: ["metodoPago"],
       where: { sesionCajaId: sesion.id, estado: "PAGADA" },
       _sum: { total: true },
-      _count: { _all: true },
     });
-    const suma = (m: string) => porMetodo.find((g) => g.metodoPago === m)?._sum.total ?? 0;
-    const conteo = (m: string) => porMetodo.find((g) => g.metodoPago === m)?._count._all ?? 0;
-    const efectivo = suma("EFECTIVO");
-    const tarjeta = suma("TARJETA");
-    const otro = suma("OTRO");
+    const efectivo = porMetodo.find((g) => g.metodoPago === "EFECTIVO")?._sum.total ?? 0;
 
     // Arqueo: el esperado del cajón es fondo + efectivo (tarjeta/otro no están en caja).
     const montoEsperado = sesion.montoInicial + efectivo;
@@ -350,10 +340,7 @@ export class PosService {
       );
     }
 
-    // Cuentas abiertas globales (aviso, no bloquea): las ABIERTAS aún no tienen
-    // sesión (se estampa al cobrar); se cobrarán en el próximo turno.
-    const cuentasAbiertasPendientes = await this.prisma.cuenta.count({ where: { estado: "ABIERTA" } });
-
+    // Se CONGELA todo en la sesión (para el ADMIN), igual que antes.
     const cerrada = await this.prisma.sesionCaja.update({
       where: { id: sesion.id },
       data: {
@@ -367,17 +354,9 @@ export class PosService {
       },
     });
 
-    return {
-      ...cerrada,
-      desglose: {
-        efectivo: { total: efectivo, count: conteo("EFECTIVO") },
-        tarjeta: { total: tarjeta, count: conteo("TARJETA") },
-        otro: { total: otro, count: conteo("OTRO") },
-        totalVentas: efectivo + tarjeta + otro,
-      },
-      cuentasAbiertasPendientes,
-      aviso: cuentasAbiertasPendientes > 0 ? `Hay ${cuentasAbiertasPendientes} cuenta(s) abierta(s) sin cobrar.` : null,
-    };
+    // Cierre a ciegas: la respuesta al cajero solo dice si cuadró y cuánto es la diferencia.
+    // El desglose/esperado quedan congelados en la sesión y los ve el ADMIN en el histórico.
+    return { cuadrada: cerrada.diferencia === 0, diferencia: cerrada.diferencia };
   }
 
   // Consulta de una sesión (arqueos pasados).
