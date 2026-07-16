@@ -22,6 +22,7 @@ const ITEMS: MenuEntry[] = [
   { href: "/admin/clientes", icon: "👥", label: "Clientes" },
   { href: "/admin/productos", icon: "🍔", label: "Productos", roles: ["ADMIN"] },
   { href: "/admin/inventario", icon: "📦", label: "Inventario", roles: ["ADMIN"] },
+  { href: "/admin/inventario/conteo", icon: "🧮", label: "Conteo", roles: ["ADMIN", "SUPERVISOR", "CAJA"] },
   { href: "/admin/tarifas", icon: "💰", label: "Tarifas", roles: ["ADMIN"] },
   { href: "/admin/bloqueos", icon: "🔒", label: "Bloqueos", roles: ["ADMIN", "SUPERVISOR"] },
 ];

@@ -468,6 +468,33 @@ export const cambiarEstadoMetodoCobro = (id: string, activo: boolean) =>
 // Lectura para el POS (A·S·C): solo métodos activos, para renderizar los botones de cobro.
 export const getMetodosCobroPos = () => getJSON<MetodoCobro[]>("/api/pos/metodos-cobro");
 
+// ── Conteo de inventario (flujo del cajero, A CIEGAS: sin stockEsperado ni diferencia) ──
+export interface ConteoLineaCajero {
+  id: string;
+  productoId: string;
+  stockContado: number | null;
+  producto: { nombre: string; categoria: string };
+}
+export interface ConteoCajero {
+  id: string;
+  estado: "ABIERTO" | "PENDIENTE_REVISION" | "CERRADO";
+  abiertoEn: string;
+  usuarioAperturaId: string;
+  lineas: ConteoLineaCajero[];
+}
+// El backend devuelve null (cuerpo vacío) si no hay conteo ABIERTO.
+export async function getConteoActual(): Promise<ConteoCajero | null> {
+  const res = await fetch(`${API}/api/pos/conteo/actual`, { cache: "no-store", headers: { ...authHeaders() } });
+  if (res.status === 401) throw new NoAutorizado();
+  if (!res.ok) throw new Error("No se pudo cargar el conteo");
+  const text = await res.text();
+  return text ? (JSON.parse(text) as ConteoCajero) : null;
+}
+export const abrirConteo = () => send<ConteoCajero>("POST", "/api/pos/conteo/abrir");
+export const guardarLineaConteo = (lineaId: string, stockContado: number) =>
+  send<{ id: string; stockContado: number }>("PATCH", `/api/pos/conteo/linea/${lineaId}`, { stockContado });
+export const enviarConteo = () => send<{ enviado: boolean; estado: string }>("POST", "/api/pos/conteo/enviar");
+
 // ── Agenda (calendario por día) ──
 export interface AgendaRecurso { id: string; nombre: string; tipo: string | null; orden: number | null; }
 export interface AgendaReserva {
