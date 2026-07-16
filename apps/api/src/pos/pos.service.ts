@@ -14,11 +14,33 @@ export class PosService {
       orderBy: [{ categoria: "asc" }, { stockBaseId: "asc" }, { unidades: "asc" }, { nombre: "asc" }],
     });
   }
-  crearProducto(dto: CrearProductoDto) {
-    return this.prisma.producto.create({ data: dto });
+  async crearProducto(dto: CrearProductoDto) {
+    const nombre = dto.nombre.trim();
+    if (await this.nombreProductoEnUso(nombre)) {
+      throw new ConflictException("Ya existe un producto con ese nombre");
+    }
+    return this.prisma.producto.create({ data: { ...dto, nombre } });
   }
-  actualizarProducto(id: string, dto: ActualizarProductoDto) {
-    return this.prisma.producto.update({ where: { id }, data: dto });
+
+  // ¿Nombre de producto ya en uso (case-insensitive)? Excluye opcionalmente un id (al editar).
+  private async nombreProductoEnUso(nombre: string, exceptId?: string) {
+    const existe = await this.prisma.producto.findFirst({
+      where: {
+        nombre: { equals: nombre.trim(), mode: "insensitive" },
+        ...(exceptId ? { id: { not: exceptId } } : {}),
+      },
+      select: { id: true },
+    });
+    return !!existe;
+  }
+  async actualizarProducto(id: string, dto: ActualizarProductoDto) {
+    const existe = await this.prisma.producto.findUnique({ where: { id }, select: { id: true } });
+    if (!existe) throw new NotFoundException("Producto no encontrado");
+    const nombre = dto.nombre?.trim();
+    if (nombre && (await this.nombreProductoEnUso(nombre, id))) {
+      throw new ConflictException("Ya existe un producto con ese nombre");
+    }
+    return this.prisma.producto.update({ where: { id }, data: nombre ? { ...dto, nombre } : dto });
   }
   desactivarProducto(id: string) {
     return this.prisma.producto.update({ where: { id }, data: { activo: false } });

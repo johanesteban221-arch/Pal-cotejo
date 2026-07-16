@@ -13,12 +13,14 @@ import {
   formatoCOP,
 } from "../../../lib/api";
 import { NoAutorizado, logout } from "../../../lib/auth";
+import ProductoEditModal from "./ProductoEditModal";
 
 export default function ProductosAdmin() {
   const router = useRouter();
   const [productos, setProductos] = useState<Producto[]>([]);
   const [msg, setMsg] = useState("");
   const [f, setF] = useState({ nombre: "", categoria: "BEBIDA", precio: "", stock: "", stockMinimo: "" });
+  const [editando, setEditando] = useState<Producto | null>(null);
 
   const onErr = (e: unknown) => {
     if (e instanceof NoAutorizado) {
@@ -103,23 +105,16 @@ export default function ProductosAdmin() {
                     {esPresentacion && <span className="status-pill pill-gray" style={{ marginLeft: 6, fontSize: 10 }}>×{p.unidades} u</span>}
                   </td>
                   <td><span className="status-pill pill-gray">{p.categoria}</span></td>
-                  <td>
-                    <input className="form-input" type="number" defaultValue={p.precio} style={{ width: 100, padding: "6px 10px" }}
-                      onBlur={(e) => { const v = Number(e.target.value); if (v !== p.precio) actualizarProducto(p.id, { precio: v }).then(() => aviso("✓ Precio actualizado")).catch(onErr); }} />
-                  </td>
+                  <td>{formatoCOP(p.precio)}</td>
                   <td>
                     {esPresentacion
                       ? <span className="muted" style={{ fontSize: 12 }}>usa stock de {p.stockBase?.nombre}</span>
                       : <span className={`status-pill ${bajo ? "pill-red" : "pill-green"}`}>{p.stock}</span>}
                   </td>
-                  <td>
-                    {esPresentacion ? <span className="muted">—</span> : (
-                      <input className="form-input" type="number" defaultValue={p.stockMinimo} style={{ width: 70, padding: "6px 10px" }}
-                        onBlur={(e) => { const v = Number(e.target.value); if (v !== p.stockMinimo) actualizarProducto(p.id, { stockMinimo: v }).then(() => aviso("✓ Mínimo actualizado")).catch(onErr); }} />
-                    )}
-                  </td>
+                  <td>{esPresentacion ? <span className="muted">—</span> : p.stockMinimo}</td>
                   <td>{p.activo ? <span className="status-pill pill-green">Activo</span> : <span className="status-pill pill-red">Inactivo</span>}</td>
                   <td style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
+                    <button className="btn-outline" style={{ fontSize: 12, padding: "4px 10px" }} onClick={() => setEditando(p)}>Editar</button>
                     {!esPresentacion && <button className="btn-gold" style={{ fontSize: 12, padding: "4px 10px" }} onClick={() => entrada(p)}>+ Entrada</button>}
                     {p.activo
                       ? <button className="btn-outline" style={{ fontSize: 12, padding: "4px 10px", color: "var(--red-lt)", borderColor: "rgba(192,57,43,.4)" }} onClick={() => desactivarProducto(p.id).then(() => { aviso("Desactivado"); cargar(); }).catch(onErr)}>Off</button>
@@ -138,8 +133,17 @@ export default function ProductosAdmin() {
       </div>
       <p className="muted" style={{ fontSize: 12, marginTop: 12 }}>
         <b>+ Entrada</b> = registrar mercancía que llega (suma al stock). El stock <b>baja solo</b> al cobrar una venta en el POS.
-        El precio y el mínimo se guardan al salir del campo.
+        Nombre, categoría, precio y mínimo se cambian con <b>Editar</b>.
       </p>
+
+      {editando && (
+        <ProductoEditModal
+          producto={editando}
+          onClose={() => setEditando(null)}
+          onSaved={() => { setEditando(null); aviso("✓ Producto actualizado"); cargar(); }}
+          onErr={onErr}
+        />
+      )}
     </>
   );
 }
