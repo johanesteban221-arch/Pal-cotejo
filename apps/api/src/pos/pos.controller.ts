@@ -135,6 +135,9 @@ export class PosController {
   }
 
   // ── Reporte ──
+  // Contadores de negocio (ventas Hoy/Semana, top productos): solo ADMIN.
+  // El cajero/supervisor no los ve ni por API (además de ocultarse en el front).
+  @Roles("ADMIN")
   @Get("reporte")
   reporte() {
     return this.pos.reporte();

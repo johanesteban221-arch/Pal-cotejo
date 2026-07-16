@@ -26,7 +26,7 @@ import {
   cerrarCaja,
   formatoCOP,
 } from "../../../lib/api";
-import { NoAutorizado, logout } from "../../../lib/auth";
+import { NoAutorizado, getUser, logout } from "../../../lib/auth";
 
 const CATS: { key: "" | "BEBIDA" | "COMIDA" | "OTRO"; label: string }[] = [
   { key: "", label: "Todos" },
@@ -47,6 +47,7 @@ export default function BarPOS() {
   const [resumen, setResumen] = useState<(CajaCierre & { nota: string | null }) | null>(null);
   const [cuentas, setCuentas] = useState<Cuenta[]>([]);
   const [reporte, setReporte] = useState<ReporteBar | null>(null);
+  const [esAdmin, setEsAdmin] = useState(false);
   const [sel, setSel] = useState<Cuenta | null>(null);
   const [nuevaMesa, setNuevaMesa] = useState("");
   const [msg, setMsg] = useState("");
@@ -70,10 +71,13 @@ export default function BarPOS() {
 
   function recargar() {
     getCuentasAbiertas().then(setCuentas).catch(onErr);
-    getReporteBar().then(setReporte).catch(onErr);
     getCajaActual().then((c) => { setCaja(c); setCajaCargada(true); }).catch(onErr);
+    // Los contadores de negocio son solo ADMIN: no los pedimos con CAJA/SUPERVISOR
+    // (evita un 403 y no los expone). El backend además bloquea /pos/reporte.
+    if (getUser()?.rol === "ADMIN") getReporteBar().then(setReporte).catch(onErr);
   }
   useEffect(() => {
+    setEsAdmin(getUser()?.rol === "ADMIN");
     getProductos().then(setProductos).catch(onErr);
     getMesas().then(setMesas).catch(onErr);
     getMetodosCobroPos().then(setMetodos).catch(onErr);
@@ -140,9 +144,9 @@ export default function BarPOS() {
       <div className="admin-header">
         <div className="admin-title">Sport Bar — Punto de venta</div>
         <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-          <span className="status-pill pill-green">Hoy: {reporte ? formatoCOP(reporte.ventasHoy) : "—"}</span>
-          <span className="status-pill pill-gold">Semana: {reporte ? formatoCOP(reporte.ventasSemana) : "—"}</span>
-          <span className="status-pill pill-gray">Cuentas abiertas: {reporte?.cuentasAbiertas ?? 0}</span>
+          {esAdmin && caja && <span className="status-pill pill-green">Hoy: {reporte ? formatoCOP(reporte.ventasHoy) : "—"}</span>}
+          {esAdmin && caja && <span className="status-pill pill-gold">Semana: {reporte ? formatoCOP(reporte.ventasSemana) : "—"}</span>}
+          <span className="status-pill pill-gray">Cuentas abiertas: {cuentas.length}</span>
         </div>
       </div>
 
@@ -171,6 +175,7 @@ export default function BarPOS() {
           </div>
         ))}
 
+      {caja && (
       <div className="grid-2" style={{ alignItems: "start" }}>
         {/* Salón de mesas + Walk-in (columna izquierda) */}
         <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
@@ -346,9 +351,10 @@ export default function BarPOS() {
           )}
         </div>
       </div>
+      )}
 
-      {/* Top productos */}
-      {reporte && reporte.topProductos.length > 0 && (
+      {/* Top productos (solo ADMIN, con caja abierta) */}
+      {esAdmin && caja && reporte && reporte.topProductos.length > 0 && (
         <div className="admin-table-wrap" style={{ marginTop: 16 }}>
           <div className="admin-table-header"><span className="admin-table-title">Productos más vendidos</span></div>
           <table>
