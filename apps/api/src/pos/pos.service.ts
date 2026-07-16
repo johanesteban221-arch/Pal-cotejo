@@ -1,10 +1,14 @@
 import { BadRequestException, ConflictException, ForbiddenException, Injectable, NotFoundException } from "@nestjs/common";
 import { PrismaService } from "../prisma/prisma.service";
 import { AbrirCuentaDto, ActualizarProductoDto, AgregarItemDto, CrearProductoDto } from "./dto";
+import { NotificacionesService } from "../notificaciones/notificaciones.service";
 
 @Injectable()
 export class PosService {
-  constructor(private prisma: PrismaService) {}
+  constructor(
+    private prisma: PrismaService,
+    private notificaciones: NotificacionesService,
+  ) {}
 
   // ── Catálogo de productos ──
   listarProductos(soloActivos = true) {
@@ -522,6 +526,19 @@ export class PosService {
         diferencia,
         nota: nota?.trim() || null,
       },
+    });
+
+    // Alerta al dueño (fire-and-forget, POST-commit; NO dentro de transacción). El servicio
+    // decide si dispara según activo + modo (SOLO_DESCUADRE/SIEMPRE) con la diferencia. No
+    // afecta el cierre ni la respuesta a ciegas.
+    this.notificaciones.dispararAlerta("CAJA_CERRADA", {
+      sesionId: sesion.id,
+      montoEsperado,
+      montoContado,
+      diferencia,
+      nota: cerrada.nota,
+      usuarioCierreId: usuarioId,
+      cerradaEn: cerrada.cerradaEn,
     });
 
     // Cierre a ciegas: la respuesta al cajero solo dice si cuadró y cuánto es la diferencia.
