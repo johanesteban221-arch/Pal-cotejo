@@ -32,6 +32,7 @@ const ITEMS: MenuEntry[] = [
 const CONFIG_ITEMS: MenuLink[] = [
   { href: "/admin/configuracion/usuarios", icon: "👤", label: "Usuarios" },
   { href: "/admin/configuracion/metodos-pago", icon: "💳", label: "Métodos de pago" },
+  { href: "/admin/configuracion/alertas", icon: "🔔", label: "Alertas" },
 ];
 
 function puedeVer(rol: Rol | undefined, roles?: Rol[]) {

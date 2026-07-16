@@ -530,6 +530,18 @@ export const ajustarLineaConteo = (id: string, lineaId: string) =>
 export const cerrarConteo = (id: string) =>
   send<{ id: string; estado: string; revisadoEn: string }>("POST", `/api/pos/conteo/${id}/cerrar`);
 
+// ── Alertas al dueño (config, ADMIN) ──
+export type ModoAlerta = "SIEMPRE" | "SOLO_DESCUADRE";
+export interface ConfigAlerta {
+  tipo: string;
+  activo: boolean;
+  modo: ModoAlerta | null;
+  actualizadoEn: string;
+}
+export const getConfigAlertas = () => getJSON<ConfigAlerta[]>("/api/alertas/config");
+export const actualizarAlerta = (tipo: string, data: { activo?: boolean; modo?: ModoAlerta }) =>
+  sendJSON<ConfigAlerta>(`/api/alertas/config/${tipo}`, "PATCH", data);
+
 // ── Agenda (calendario por día) ──
 export interface AgendaRecurso { id: string; nombre: string; tipo: string | null; orden: number | null; }
 export interface AgendaReserva {
