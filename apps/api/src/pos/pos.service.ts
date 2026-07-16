@@ -185,21 +185,53 @@ export class PosService {
     const sesion = await this.prisma.sesionCaja.findFirst({ where: { estado: "ABIERTA" }, select: { id: true } });
     if (!sesion) throw new ConflictException("Abre la caja antes de cobrar");
 
-    // Cobrar + descontar inventario (venta) en una sola transacción.
+    // Cobrar + descontar inventario (venta) en una sola transacción (todo o nada).
     return this.prisma.$transaction(async (tx) => {
+      // Resolver cada ítem a su producto (nombre/unidades/base). El stock vive en la base.
+      const resueltos = await Promise.all(
+        cuenta.items.map(async (it) => {
+          const prod = await tx.producto.findUnique({
+            where: { id: it.productoId },
+            select: { id: true, nombre: true, unidades: true, stockBaseId: true },
+          });
+          return prod ? { prod, cantidad: it.cantidad } : null;
+        }),
+      );
+      const items = resueltos.filter((r): r is NonNullable<typeof r> => r !== null);
+
+      // Demanda total de stock POR BASE (las presentaciones suman a su base).
+      const demandaPorBase = new Map<string, number>();
+      for (const { prod, cantidad } of items) {
+        const baseId = prod.stockBaseId ?? prod.id;
+        demandaPorBase.set(baseId, (demandaPorBase.get(baseId) ?? 0) + prod.unidades * cantidad);
+      }
+
+      // GUARD: leer cada base UNA vez (stock + flag + nombre) y evaluar TODAS.
+      // Bloquea si la demanda supera el stock y la base NO permite vender sin stock.
+      const bases = await tx.producto.findMany({
+        where: { id: { in: [...demandaPorBase.keys()] } },
+        select: { id: true, nombre: true, stock: true, permitirSinStock: true },
+      });
+      const sinStock = bases
+        .filter((b) => (demandaPorBase.get(b.id) ?? 0) > b.stock && !b.permitirSinStock)
+        .map((b) => b.nombre);
+      if (sinStock.length > 0) {
+        // Throw dentro de la transacción → rollback total: la cuenta NO pasa a PAGADA,
+        // no se descuenta stock, no se crean movimientos. Todo o nada.
+        throw new BadRequestException(`Sin stock suficiente de: ${sinStock.join(", ")}.`);
+      }
+
+      // Guard superado → cobrar y descontar (igual que antes).
       const pagada = await tx.cuenta.update({
         where: { id },
         data: { estado: "PAGADA", metodoPago: metodo.codigo, cerradaEn: new Date(), sesionCajaId: sesion.id },
       });
-      for (const it of cuenta.items) {
-        const prod = await tx.producto.findUnique({ where: { id: it.productoId } });
-        if (!prod) continue;
-        // El stock vive en el producto base (si es una presentación). Descuenta unidades × cantidad.
+      for (const { prod, cantidad } of items) {
         const baseId = prod.stockBaseId ?? prod.id;
-        const descuento = prod.unidades * it.cantidad;
+        const descuento = prod.unidades * cantidad;
         await tx.producto.update({ where: { id: baseId }, data: { stock: { decrement: descuento } } });
         await tx.movimientoInventario.create({
-          data: { productoId: baseId, tipo: "SALIDA", cantidad: descuento, motivo: `Venta ${prod.nombre} ×${it.cantidad} · cuenta ${id.slice(-6)}` },
+          data: { productoId: baseId, tipo: "SALIDA", cantidad: descuento, motivo: `Venta ${prod.nombre} ×${cantidad} · cuenta ${id.slice(-6)}` },
         });
       }
       return pagada;
