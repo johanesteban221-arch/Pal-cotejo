@@ -1,9 +1,13 @@
 import { BadRequestException, ConflictException, Injectable, NotFoundException } from "@nestjs/common";
 import { PrismaService } from "../prisma/prisma.service";
+import { NotificacionesService } from "../notificaciones/notificaciones.service";
 
 @Injectable()
 export class ConteoService {
-  constructor(private prisma: PrismaService) {}
+  constructor(
+    private prisma: PrismaService,
+    private notificaciones: NotificacionesService,
+  ) {}
 
   // Vista A CIEGAS del conteo: cada línea trae el producto y lo contado, NUNCA el
   // stockEsperado ni la diferencia (el cajero no debe verlos). La omisión se hace en
@@ -104,6 +108,33 @@ export class ConteoService {
         data: { estado: "PENDIENTE_REVISION" },
       }),
     ]);
+
+    // Alerta al dueño (fire-and-forget, POST-commit; NUNCA dentro de la transacción).
+    // Lectura aditiva del resumen de descuadres + quién contó; NO altera la lógica de enviar.
+    const resumen = await this.prisma.conteoInventario.findUnique({
+      where: { id: conteo.id },
+      select: {
+        usuarioAperturaId: true,
+        lineas: {
+          where: { diferencia: { not: 0 } },
+          select: { diferencia: true, producto: { select: { nombre: true } } },
+        },
+      },
+    });
+    // Solo se avisa si HAY descuadres (si el conteo cuadra perfecto, no molesta al dueño).
+    if (resumen && resumen.lineas.length > 0) {
+      const topDiferencias = [...resumen.lineas]
+        .sort((a, b) => Math.abs(b.diferencia ?? 0) - Math.abs(a.diferencia ?? 0))
+        .slice(0, 5)
+        .map((l) => ({ producto: l.producto.nombre, diferencia: l.diferencia }));
+      this.notificaciones.dispararAlerta("CONTEO_DIFERENCIAS", {
+        conteoId: conteo.id,
+        totalLineas: conteo.lineas.length,
+        lineasDescuadradas: resumen.lineas.length,
+        topDiferencias,
+        usuarioAperturaId: resumen.usuarioAperturaId,
+      });
+    }
 
     return { enviado: true, estado: "PENDIENTE_REVISION" };
   }
