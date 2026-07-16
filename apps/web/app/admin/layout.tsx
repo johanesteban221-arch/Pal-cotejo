@@ -17,6 +17,7 @@ const ITEMS: MenuEntry[] = [
   { href: "/admin/reservas", icon: "📋", label: "Reservas" },
   { href: "/admin/agenda", icon: "📅", label: "Agenda" },
   { href: "/admin/canchas", icon: "⚽", label: "Canchas" },
+  { href: "/admin/mesas", icon: "🪑", label: "Mesas", roles: ["ADMIN"] },
   { href: "/admin/bar", icon: "🍺", label: "Sport bar" },
   { seccion: "Gestión" },
   { href: "/admin/clientes", icon: "👥", label: "Clientes" },

@@ -262,6 +262,25 @@ export interface Mesa {
   capacidad: number;
 }
 export const getMesas = () => getJSON<Mesa[]>("/api/pos/mesas");
+
+// ── Mesas (gestión admin) ──
+export interface MesaAdmin {
+  id: string;
+  nombre: string;
+  capacidad: number;
+  activa: boolean;
+}
+export interface EstadoMesaResult {
+  aplicado: boolean;
+  mesa?: MesaAdmin;
+}
+export const getMesasAdmin = () => getJSON<MesaAdmin[]>("/api/admin/mesas");
+export const crearMesa = (data: Record<string, unknown>) =>
+  sendJSON<MesaAdmin>("/api/admin/mesas", "POST", data);
+export const actualizarMesa = (id: string, data: Record<string, unknown>) =>
+  sendJSON<MesaAdmin>(`/api/admin/mesas/${id}`, "PATCH", data);
+export const cambiarEstadoMesa = (id: string, activa: boolean) =>
+  sendJSON<EstadoMesaResult>(`/api/admin/mesas/${id}/estado`, "PATCH", { activa });
 export const agregarItem = (cuentaId: string, productoId: string, cantidad = 1) =>
   sendJSON<Cuenta>(`/api/pos/cuentas/${cuentaId}/items`, "POST", { productoId, cantidad });
 export const quitarItem = (itemId: string) =>
