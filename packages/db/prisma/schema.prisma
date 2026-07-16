@@ -328,6 +328,12 @@ enum TipoMovimiento {
   AJUSTE // corrección manual
 }
 
+enum EstadoConteo {
+  ABIERTO            // el cajero está contando
+  PENDIENTE_REVISION // contado; espera revisión de admin/supervisor
+  CERRADO            // revisado (ajustes aplicados o descartados)
+}
+
 enum EstadoSesionCaja {
   ABIERTA
   CERRADA
@@ -353,6 +359,7 @@ model Producto {
   presentaciones Producto[] @relation("Presentaciones")
   items          ItemCuenta[]
   movimientos    MovimientoInventario[]
+  conteoLineas   ConteoLinea[]
 
   @@index([categoria])
   @@map("productos")
@@ -371,6 +378,41 @@ model MovimientoInventario {
 
   @@index([productoId])
   @@map("movimientos_inventario")
+}
+
+/// Conteo físico de inventario. Cabecera: quién contó, cuándo, estado. Congela el
+/// stock esperado de cada producto base al abrirse (espejo de SesionCaja + Cuentas).
+model ConteoInventario {
+  id                String        @id @default(cuid())
+  usuarioAperturaId String // quién abrió/contó (cajero)
+  abiertoEn         DateTime      @default(now())
+  estado            EstadoConteo  @default(ABIERTO)
+  usuarioRevisionId String? // quién revisó/cerró (admin/supervisor)
+  revisadoEn        DateTime?
+  nota              String?
+
+  lineas ConteoLinea[]
+
+  @@map("conteos_inventario")
+}
+
+/// Línea de conteo: un producto base por conteo, con su esperado congelado, lo contado
+/// y la diferencia. `ajustado` marca si ya se aplicó el AJUSTE de stock a esa línea.
+model ConteoLinea {
+  id            String  @id @default(cuid())
+  conteoId      String
+  productoId    String
+  stockEsperado Int // CONGELADO al abrir el conteo
+  stockContado  Int? // null hasta que el cajero lo ingresa
+  diferencia    Int? // stockContado - stockEsperado (se fija al enviar a revisión)
+  ajustado      Boolean @default(false)
+
+  conteo   ConteoInventario @relation(fields: [conteoId], references: [id], onDelete: Cascade)
+  producto Producto         @relation(fields: [productoId], references: [id])
+
+  @@unique([conteoId, productoId])
+  @@index([conteoId])
+  @@map("conteos_lineas")
 }
 
 /// Método de cobro del POS (editable). Distinto del enum MetodoPago (ese es de pagos Wompi de reservas).
