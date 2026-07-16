@@ -36,6 +36,16 @@ const CONFIG_ITEMS: MenuLink[] = [
   { href: "/admin/configuracion/alertas", icon: "🔔", label: "Alertas" },
 ];
 
+// Módulos futuros (roadmap dentro de la app). Solo ADMIN; pantallas informativas.
+const PROXIMAMENTE_ITEMS: MenuLink[] = [
+  { href: "/admin/proximamente/contabilidad", icon: "📊", label: "Contabilidad" },
+  { href: "/admin/proximamente/reportes", icon: "📈", label: "Reportes" },
+  { href: "/admin/proximamente/chatbot", icon: "💬", label: "Chatbot WhatsApp" },
+  { href: "/admin/proximamente/reservas-online", icon: "🌐", label: "Reservas Online" },
+  { href: "/admin/proximamente/fidelizacion", icon: "⭐", label: "Fidelización" },
+  { href: "/admin/proximamente/compras", icon: "🛒", label: "Compras" },
+];
+
 function puedeVer(rol: Rol | undefined, roles?: Rol[]) {
   return !roles || (rol != null && roles.includes(rol));
 }
@@ -102,6 +112,24 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                 key={it.href}
                 href={it.href}
                 className={`sidebar-item ${path === it.href ? "active" : ""}`}
+              >
+                <span className="sidebar-icon">{it.icon}</span>
+                {it.label}
+              </Link>
+            ))}
+          </>
+        )}
+
+        {/* Próximamente — solo ADMIN. Estilo atenuado: se distinguen de los módulos activos. */}
+        {usuario?.rol === "ADMIN" && (
+          <>
+            <div className="sidebar-section">Próximamente</div>
+            {PROXIMAMENTE_ITEMS.map((it) => (
+              <Link
+                key={it.href}
+                href={it.href}
+                className={`sidebar-item ${path === it.href ? "active" : ""}`}
+                style={{ opacity: 0.65 }}
               >
                 <span className="sidebar-icon">{it.icon}</span>
                 {it.label}
