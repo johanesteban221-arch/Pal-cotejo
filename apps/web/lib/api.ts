@@ -495,6 +495,41 @@ export const guardarLineaConteo = (lineaId: string, stockContado: number) =>
   send<{ id: string; stockContado: number }>("PATCH", `/api/pos/conteo/linea/${lineaId}`, { stockContado });
 export const enviarConteo = () => send<{ enviado: boolean; estado: string }>("POST", "/api/pos/conteo/enviar");
 
+// ── Conteo — revisión (ADMIN/SUPERVISOR). ESTOS tipos SÍ traen esperado/diferencia. ──
+export interface ConteoRevisionLinea {
+  id: string;
+  productoId: string;
+  stockEsperado: number;
+  stockContado: number | null;
+  diferencia: number | null;
+  ajustado: boolean;
+  producto: { nombre: string; categoria: string };
+}
+export interface ConteoRevision {
+  id: string;
+  estado: string;
+  abiertoEn: string;
+  usuarioAperturaId: string;
+  usuarioRevisionId: string | null;
+  revisadoEn: string | null;
+  nota: string | null;
+  lineas: ConteoRevisionLinea[];
+}
+export interface ConteoPendiente {
+  id: string;
+  abiertoEn: string;
+  usuarioAperturaId: string;
+  _count: { lineas: number };
+}
+export const getConteosPendientes = () => getJSON<ConteoPendiente[]>("/api/pos/conteo/pendientes");
+export const getConteoRevision = (id: string) => getJSON<ConteoRevision>(`/api/pos/conteo/${id}/revision`);
+export const ajustarLineaConteo = (id: string, lineaId: string) =>
+  send<{ lineaId: string; producto: string; aplicado: number; stockNuevo: number; ajustado: boolean }>(
+    "POST", `/api/pos/conteo/${id}/ajustar-linea/${lineaId}`,
+  );
+export const cerrarConteo = (id: string) =>
+  send<{ id: string; estado: string; revisadoEn: string }>("POST", `/api/pos/conteo/${id}/cerrar`);
+
 // ── Agenda (calendario por día) ──
 export interface AgendaRecurso { id: string; nombre: string; tipo: string | null; orden: number | null; }
 export interface AgendaReserva {
