@@ -31,4 +31,29 @@ export class ConteoController {
   enviar() {
     return this.conteo.enviar();
   }
+
+  // ── Revisión y ajuste — solo ADMIN/SUPERVISOR ──
+  @Roles("ADMIN", "SUPERVISOR")
+  @Get("pendientes")
+  pendientes() {
+    return this.conteo.pendientes();
+  }
+
+  @Roles("ADMIN", "SUPERVISOR")
+  @Get(":id/revision")
+  revision(@Param("id") id: string) {
+    return this.conteo.revision(id);
+  }
+
+  @Roles("ADMIN", "SUPERVISOR")
+  @Post(":id/ajustar-linea/:lineaId")
+  ajustarLinea(@Param("id") id: string, @Param("lineaId") lineaId: string, @Req() req: any) {
+    return this.conteo.ajustarLinea(id, lineaId, req.user.sub);
+  }
+
+  @Roles("ADMIN", "SUPERVISOR")
+  @Post(":id/cerrar")
+  cerrar(@Param("id") id: string, @Req() req: any) {
+    return this.conteo.cerrar(id, req.user.sub);
+  }
 }
