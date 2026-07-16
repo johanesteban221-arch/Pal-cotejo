@@ -43,3 +43,8 @@ export class CobrarDto {
 export class AbrirCajaDto {
   @IsInt() @Min(0) montoInicial!: number;
 }
+
+export class CerrarCajaDto {
+  @IsInt() @Min(0) montoContado!: number;
+  @IsOptional() @IsString() nota?: string;
+}

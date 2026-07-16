@@ -1,6 +1,6 @@
 import { Body, Controller, Delete, Get, Param, Patch, Post, Query, Req, UseGuards } from "@nestjs/common";
 import { PosService } from "./pos.service";
-import { AbrirCajaDto, AbrirCuentaDto, ActualizarProductoDto, AgregarItemDto, CobrarDto, CrearProductoDto, EntradaInventarioDto } from "./dto";
+import { AbrirCajaDto, AbrirCuentaDto, CerrarCajaDto, ActualizarProductoDto, AgregarItemDto, CobrarDto, CrearProductoDto, EntradaInventarioDto } from "./dto";
 import { JwtAuthGuard } from "../auth/jwt-auth.guard";
 import { RolesGuard } from "../auth/roles.guard";
 import { Roles } from "../auth/roles.decorator";
@@ -25,6 +25,16 @@ export class PosController {
   @Get("caja/actual")
   cajaActual() {
     return this.pos.cajaActual();
+  }
+
+  @Post("caja/cerrar")
+  cerrarCaja(@Body() dto: CerrarCajaDto, @Req() req: any) {
+    return this.pos.cerrarCaja(req.user.sub, dto.montoContado, dto.nota);
+  }
+
+  @Get("caja/:id")
+  sesion(@Param("id") id: string) {
+    return this.pos.obtenerSesion(id);
   }
 
   // ── Catálogo ──

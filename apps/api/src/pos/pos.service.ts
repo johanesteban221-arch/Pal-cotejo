@@ -319,4 +319,71 @@ export class PosService {
       efectivoEsperado: sesion.montoInicial + efectivo,
     };
   }
+
+  // Cierre + arqueo. Congela montoEsperado/contado/diferencia. Exige nota si descuadra.
+  async cerrarCaja(usuarioId: string, montoContado: number, nota?: string) {
+    const sesion = await this.prisma.sesionCaja.findFirst({ where: { estado: "ABIERTA" } });
+    if (!sesion) throw new ConflictException("No hay caja abierta");
+
+    // Desglose por método (solo cuentas PAGADA de esta sesión).
+    const porMetodo = await this.prisma.cuenta.groupBy({
+      by: ["metodoPago"],
+      where: { sesionCajaId: sesion.id, estado: "PAGADA" },
+      _sum: { total: true },
+      _count: { _all: true },
+    });
+    const suma = (m: string) => porMetodo.find((g) => g.metodoPago === m)?._sum.total ?? 0;
+    const conteo = (m: string) => porMetodo.find((g) => g.metodoPago === m)?._count._all ?? 0;
+    const efectivo = suma("EFECTIVO");
+    const tarjeta = suma("TARJETA");
+    const otro = suma("OTRO");
+
+    // Arqueo: el esperado del cajón es fondo + efectivo (tarjeta/otro no están en caja).
+    const montoEsperado = sesion.montoInicial + efectivo;
+    const diferencia = montoContado - montoEsperado;
+
+    // Regla de la nota: descuadre exige motivo, o no se cierra.
+    if (diferencia !== 0 && !(nota && nota.trim())) {
+      const tipo = diferencia > 0 ? "sobrante" : "faltante";
+      throw new BadRequestException(
+        `Hay una diferencia de $${Math.abs(diferencia)} (${tipo}). Indica el motivo del descuadre.`,
+      );
+    }
+
+    // Cuentas abiertas globales (aviso, no bloquea): las ABIERTAS aún no tienen
+    // sesión (se estampa al cobrar); se cobrarán en el próximo turno.
+    const cuentasAbiertasPendientes = await this.prisma.cuenta.count({ where: { estado: "ABIERTA" } });
+
+    const cerrada = await this.prisma.sesionCaja.update({
+      where: { id: sesion.id },
+      data: {
+        estado: "CERRADA",
+        cerradaEn: new Date(),
+        usuarioCierreId: usuarioId,
+        montoEsperado,
+        montoContado,
+        diferencia,
+        nota: nota?.trim() || null,
+      },
+    });
+
+    return {
+      ...cerrada,
+      desglose: {
+        efectivo: { total: efectivo, count: conteo("EFECTIVO") },
+        tarjeta: { total: tarjeta, count: conteo("TARJETA") },
+        otro: { total: otro, count: conteo("OTRO") },
+        totalVentas: efectivo + tarjeta + otro,
+      },
+      cuentasAbiertasPendientes,
+      aviso: cuentasAbiertasPendientes > 0 ? `Hay ${cuentasAbiertasPendientes} cuenta(s) abierta(s) sin cobrar.` : null,
+    };
+  }
+
+  // Consulta de una sesión (arqueos pasados).
+  async obtenerSesion(id: string) {
+    const s = await this.prisma.sesionCaja.findUnique({ where: { id } });
+    if (!s) throw new NotFoundException("Sesión de caja no encontrada");
+    return s;
+  }
 }
