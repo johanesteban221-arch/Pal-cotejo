@@ -345,6 +345,7 @@ model Producto {
   stock       Int               @default(0) // unidades disponibles (solo en el producto base)
   stockMinimo Int               @default(0) // umbral para alerta de stock bajo
   stockBaseId String? // si es presentación: producto base que lleva el stock
+  permitirSinStock Boolean      @default(false) // vender aunque el stock quede negativo (se lee del producto cuyo stock se descuenta: la base en presentaciones)
   activo      Boolean           @default(true)
   creadoEn    DateTime          @default(now())
 
