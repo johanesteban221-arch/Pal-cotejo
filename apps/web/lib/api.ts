@@ -429,6 +429,28 @@ export const actualizarCancha = (id: string, data: Record<string, unknown>) =>
 export const cambiarEstadoCancha = (id: string, activa: boolean, confirmar?: boolean) =>
   sendJSON<EstadoCanchaResult>(`/api/admin/canchas/${id}/estado`, "PATCH", { activa, confirmar });
 
+// ── Métodos de cobro (catálogo del POS, gestión admin) ──
+export type TipoVerificacion = "CAJON" | "COMPROBANTE";
+export interface MetodoCobro {
+  id: string;
+  nombre: string;
+  codigo: string;
+  verificacion: TipoVerificacion;
+  activo: boolean;
+  orden: number | null;
+}
+export interface EstadoMetodoCobroResult {
+  aplicado: boolean;
+  metodo?: MetodoCobro;
+}
+export const getMetodosCobro = () => getJSON<MetodoCobro[]>("/api/admin/metodos-cobro");
+export const crearMetodoCobro = (data: Record<string, unknown>) =>
+  sendJSON<MetodoCobro>("/api/admin/metodos-cobro", "POST", data);
+export const actualizarMetodoCobro = (id: string, data: Record<string, unknown>) =>
+  sendJSON<MetodoCobro>(`/api/admin/metodos-cobro/${id}`, "PATCH", data);
+export const cambiarEstadoMetodoCobro = (id: string, activo: boolean) =>
+  sendJSON<EstadoMetodoCobroResult>(`/api/admin/metodos-cobro/${id}/estado`, "PATCH", { activo });
+
 // ── Agenda (calendario por día) ──
 export interface AgendaRecurso { id: string; nombre: string; tipo: string | null; orden: number | null; }
 export interface AgendaReserva {

@@ -29,6 +29,7 @@ const ITEMS: MenuEntry[] = [
 // Sección "Configuración" (solo ADMIN). Lista para colgar más sub-pantallas.
 const CONFIG_ITEMS: MenuLink[] = [
   { href: "/admin/configuracion/usuarios", icon: "👤", label: "Usuarios" },
+  { href: "/admin/configuracion/metodos-pago", icon: "💳", label: "Métodos de pago" },
 ];
 
 function puedeVer(rol: Rol | undefined, roles?: Rol[]) {
