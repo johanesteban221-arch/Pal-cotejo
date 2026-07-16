@@ -39,3 +39,7 @@ export class AgregarItemDto {
 export class CobrarDto {
   @IsString() metodoPago!: string; // EFECTIVO, TARJETA, OTRO
 }
+
+export class AbrirCajaDto {
+  @IsInt() @Min(0) montoInicial!: number;
+}

@@ -141,11 +141,15 @@ export class PosService {
     if (cuenta.estado !== "ABIERTA") throw new BadRequestException("La cuenta ya fue cerrada");
     if (cuenta.items.length === 0) throw new BadRequestException("La cuenta no tiene productos");
 
+    // Exigir caja abierta: sin sesión no se puede cobrar (no cuadraría en el arqueo).
+    const sesion = await this.prisma.sesionCaja.findFirst({ where: { estado: "ABIERTA" }, select: { id: true } });
+    if (!sesion) throw new ConflictException("Abre la caja antes de cobrar");
+
     // Cobrar + descontar inventario (venta) en una sola transacción.
     return this.prisma.$transaction(async (tx) => {
       const pagada = await tx.cuenta.update({
         where: { id },
-        data: { estado: "PAGADA", metodoPago, cerradaEn: new Date() },
+        data: { estado: "PAGADA", metodoPago, cerradaEn: new Date(), sesionCajaId: sesion.id },
       });
       for (const it of cuenta.items) {
         const prod = await tx.producto.findUnique({ where: { id: it.productoId } });
@@ -284,6 +288,35 @@ export class PosService {
       cuentasAbiertas: abiertas,
       cuentasHoy: pagadasHoy.length,
       topProductos,
+    };
+  }
+
+  // ── Caja (sesión / turno) ──
+  async abrirCaja(usuarioId: string, montoInicial: number) {
+    const abierta = await this.prisma.sesionCaja.findFirst({ where: { estado: "ABIERTA" }, select: { id: true } });
+    if (abierta) throw new ConflictException("Ya hay una caja abierta");
+    return this.prisma.sesionCaja.create({
+      data: { usuarioAperturaId: usuarioId, montoInicial, estado: "ABIERTA" },
+    });
+  }
+
+  // Sesión abierta actual (o null), con el acumulado EN VIVO por método.
+  async cajaActual() {
+    const sesion = await this.prisma.sesionCaja.findFirst({ where: { estado: "ABIERTA" } });
+    if (!sesion) return null;
+    const porMetodo = await this.prisma.cuenta.groupBy({
+      by: ["metodoPago"],
+      where: { sesionCajaId: sesion.id, estado: "PAGADA" },
+      _sum: { total: true },
+    });
+    const suma = (m: string) => porMetodo.find((g) => g.metodoPago === m)?._sum.total ?? 0;
+    const efectivo = suma("EFECTIVO");
+    const tarjeta = suma("TARJETA");
+    const otro = suma("OTRO");
+    return {
+      ...sesion,
+      ventas: { efectivo, tarjeta, otro, total: efectivo + tarjeta + otro },
+      efectivoEsperado: sesion.montoInicial + efectivo,
     };
   }
 }
