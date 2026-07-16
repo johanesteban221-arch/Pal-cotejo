@@ -65,6 +65,11 @@ enum MetodoPago {
   OTRO
 }
 
+enum TipoVerificacion {
+  CAJON       // se cuadra contando el efectivo físico del cajón
+  COMPROBANTE // se cuadra contra comprobante (datáfono, transferencia, app)
+}
+
 enum EstadoReservaMesa {
   SOLICITADA
   CONFIRMADA
@@ -365,6 +370,19 @@ model MovimientoInventario {
 
   @@index([productoId])
   @@map("movimientos_inventario")
+}
+
+/// Método de cobro del POS (editable). Distinto del enum MetodoPago (ese es de pagos Wompi de reservas).
+/// Cuenta.metodoPago guarda el `codigo` como texto libre (sin FK todavía).
+model MetodoCobro {
+  id           String           @id @default(cuid())
+  nombre       String // etiqueta visible: "Efectivo", "Nequi", "Datáfono"
+  codigo       String           @unique // slug estable: "EFECTIVO", "NEQUI"
+  verificacion TipoVerificacion // CAJON = efectivo en cajón; COMPROBANTE = contra comprobante
+  activo       Boolean          @default(true)
+  orden        Int? // orden de los botones al cobrar
+
+  @@map("metodos_cobro")
 }
 
 /// Cuenta/consumo del bar. Puede ir ligada a una reserva o cliente, o ser una venta suelta (mesa libre).
