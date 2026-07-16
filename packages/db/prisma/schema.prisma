@@ -334,6 +334,14 @@ enum EstadoConteo {
   CERRADO            // revisado (ajustes aplicados o descartados)
 }
 
+enum TipoAlerta {
+  CAJA_CERRADA       // cierre de caja (siempre o solo si descuadra)
+  CONTEO_DIFERENCIAS // conteo de inventario con diferencias
+  RESERVA_NUEVA      // reserva creada/confirmada
+  STOCK_BAJO         // producto quedó en o bajo el mínimo (enganche en Fase 2)
+  VENTA_ANULADA      // anulación de una venta (enganche en Fase 2)
+}
+
 enum EstadoSesionCaja {
   ABIERTA
   CERRADA
@@ -413,6 +421,17 @@ model ConteoLinea {
   @@unique([conteoId, productoId])
   @@index([conteoId])
   @@map("conteos_lineas")
+}
+
+/// Config de alertas al dueño (una fila por tipo). El admin activa/desactiva cada una;
+/// si `activo`, el evento dispara un webhook a n8n. `modo` solo aplica a CAJA_CERRADA.
+model ConfiguracionAlerta {
+  tipo          TipoAlerta @id
+  activo        Boolean    @default(false)
+  modo          String? // solo CAJA_CERRADA: "SIEMPRE" | "SOLO_DESCUADRE"
+  actualizadoEn DateTime   @updatedAt
+
+  @@map("configuracion_alertas")
 }
 
 /// Método de cobro del POS (editable). Distinto del enum MetodoPago (ese es de pagos Wompi de reservas).
